@@ -1,0 +1,25 @@
+# Expense Tracker CLI Configuration
+
+[api]
+# Base URL of the expense tracker API
+base_url = "https://localhost/api"
+
+# API Key for authentication
+api_key = "supersecretapikey"
+
+# Skip SSL verification (for self-signed certificates)
+skip_ssl_verify = true
+
+[display]
+# Python interpreter path (leave empty to use system default)
+python_path = ""
+
+# Python display module path
+display_module = "./python_display/display.py"
+
+[defaults]
+# Default user ID for operations
+default_user_id = 1
+
+# Default date format
+date_format = "%Y-%m-%d"
