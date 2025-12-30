@@ -1,5 +1,4 @@
 use anyhow::Result;
-use dialoguer::Select;
 use crate::api::ApiClient;
 use crate::config::Config;
 use crate::display::Display;
@@ -184,12 +183,8 @@ fn export_data(api: &ApiClient, display: &Display) -> Result<()> {
         None
     };
     
-    let format_options = vec!["JSON", "CSV"];
-    let format_idx = Select::new()
-        .with_prompt("Export Format")
-        .items(&format_options)
-        .default(0)
-        .interact()?;
+    let format_options = vec!["JSON".to_string(), "CSV".to_string()];
+    let format_idx = select_with_number("Export Format", &format_options)?;
     
     let format = if format_idx == 0 { "json" } else { "csv" };
     

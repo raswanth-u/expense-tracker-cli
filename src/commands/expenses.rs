@@ -1,5 +1,4 @@
 use anyhow::Result;
-use dialoguer::Select;
 use crate::api::ApiClient;
 use crate::config::Config;
 use crate::display::Display;
@@ -7,10 +6,10 @@ use crate::models::{ExpenseCreate, ExpenseFilters};
 use crate::ui::*;
 use crate::constants::{CATEGORIES, PAYMENT_METHODS, COMMON_TAGS, suggest_category};
 
-pub fn handle_expenses(api: &ApiClient, display: &Display, config: &Config) -> Result<()> {
+pub fn handle_expenses(api: &ApiClient, display: &Display, _config: &Config) -> Result<()> {
     loop {
         match show_expense_menu()? {
-            ExpenseMenuOption::Create => create_expense(api, display, config)?,
+            ExpenseMenuOption::Create => create_expense(api, display, _config)?,
             ExpenseMenuOption::List => list_expenses(api, display)?,
             ExpenseMenuOption::View => view_expense(api, display)?,
             ExpenseMenuOption::Update => update_expense(api, display)?,
@@ -54,11 +53,8 @@ fn create_expense(api: &ApiClient, display: &Display, _config: &Config) -> Resul
     let date = select_date_preset()?;
     
     // Payment Method
-    let payment_idx = Select::new()
-        .with_prompt("Payment Method")
-        .items(PAYMENT_METHODS)
-        .default(0)
-        .interact()?;
+    let payment_options: Vec<String> = PAYMENT_METHODS.iter().map(|s| s.to_string()).collect();
+    let payment_idx = select_with_number("Payment Method", &payment_options)?;
     let payment_method = PAYMENT_METHODS[payment_idx].to_string();
     
     // Credit Card (if applicable)
@@ -131,11 +127,8 @@ fn create_expense(api: &ApiClient, display: &Display, _config: &Config) -> Resul
 }
 
 pub fn select_category() -> Result<String> {
-    let category_idx = Select::new()
-        .with_prompt("Category")
-        .items(CATEGORIES)
-        .default(0)
-        .interact()?;
+    let category_options: Vec<String> = CATEGORIES.iter().map(|s| s.to_string()).collect();
+    let category_idx = select_with_number("Category", &category_options)?;
     
     let category = CATEGORIES[category_idx];
     
@@ -152,20 +145,16 @@ fn select_tags() -> Result<String> {
     }
     
     let options = vec![
-        "Select from common tags",
-        "Enter custom tags",
+        "Select from common tags".to_string(),
+        "Enter custom tags".to_string(),
     ];
     
-    let choice = Select::new()
-        .with_prompt("Tag selection method")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let choice = select_with_number("Tag selection method", &options)?;
     
     if choice == 0 {
         let selected = select_multiple_from_list(
             &COMMON_TAGS.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
-            "Select tags (Space to toggle, Enter to confirm)",
+            "Select tags",
         )?;
         
         let tags: Vec<String> = selected.iter()
@@ -204,16 +193,16 @@ fn list_expenses(api: &ApiClient, display: &Display) -> Result<()> {
 
 fn build_expense_filters(api: &ApiClient) -> Result<ExpenseFilters> {
     let filter_options = vec![
-        "User",
-        "Date Range",
-        "Category",
-        "Payment Method",
-        "Amount Range",
+        "User".to_string(),
+        "Date Range".to_string(),
+        "Category".to_string(),
+        "Payment Method".to_string(),
+        "Amount Range".to_string(),
     ];
     
     let selected = select_multiple_from_list(
-        &filter_options.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
-        "Select filters (Space to toggle, Enter to confirm)",
+        &filter_options,
+        "Select filters",
     )?;
     
     let mut filters = ExpenseFilters::default();
@@ -224,7 +213,9 @@ fn build_expense_filters(api: &ApiClient) -> Result<ExpenseFilters> {
                 // User filter
                 let users = api.list_users(Some(true))?;
                 if !users.is_empty() {
-                    Display::new(&crate::config::Config::load()?).show("users", &users)?;
+                    let config = crate::config::Config::load()?;
+                    let display = crate::display::Display::new(&config);
+                    display.show("users", &users)?;
                     let user_idx = select_from_list(
                         &users,
                         "Select User",
@@ -246,10 +237,8 @@ fn build_expense_filters(api: &ApiClient) -> Result<ExpenseFilters> {
             }
             3 => {
                 // Payment method
-                let pm_idx = Select::new()
-                    .with_prompt("Payment Method")
-                    .items(PAYMENT_METHODS)
-                    .interact()?;
+                let pm_options: Vec<String> = PAYMENT_METHODS.iter().map(|s| s.to_string()).collect();
+                let pm_idx = select_with_number("Payment Method", &pm_options)?;
                 filters.payment_method = Some(PAYMENT_METHODS[pm_idx].to_string());
             }
             4 => {
@@ -267,8 +256,6 @@ fn build_expense_filters(api: &ApiClient) -> Result<ExpenseFilters> {
 fn view_expense(api: &ApiClient, display: &Display) -> Result<()> {
     print_section_header("View Expense Details");
     
-    // For simplicity, ask for expense ID directly
-    // In a real scenario, you might want to list and select
     let expense_id = prompt_int("Expense ID", None, Some(1), None)?;
     
     print_info(&format!("Fetching expense {}...", expense_id));
@@ -310,11 +297,9 @@ fn update_expense(api: &ApiClient, display: &Display) -> Result<()> {
         .position(|&p| p == current.payment_method)
         .unwrap_or(0);
     
-    let payment_idx = Select::new()
-        .with_prompt("Payment Method")
-        .items(PAYMENT_METHODS)
-        .default(current_pm_idx)
-        .interact()?;
+    println!("\nCurrent payment method: {}", PAYMENT_METHODS[current_pm_idx]);
+    let payment_options: Vec<String> = PAYMENT_METHODS.iter().map(|s| s.to_string()).collect();
+    let payment_idx = select_with_number("Payment Method", &payment_options)?;
     let payment_method = PAYMENT_METHODS[payment_idx].to_string();
     
     // Credit Card
@@ -347,15 +332,11 @@ fn update_expense(api: &ApiClient, display: &Display) -> Result<()> {
     
     display.show("users", &users)?;
     
-    let default_user_idx = users.iter()
-        .position(|u| u.id.unwrap_or(0) == current.user_id)
-        .unwrap_or(0);
-    
-    let user_idx = Select::new()
-        .with_prompt("Select User")
-        .items(&users.iter().map(|u| format!("{} ({})", u.name, u.email)).collect::<Vec<_>>())
-        .default(default_user_idx)
-        .interact()?;
+    let user_idx = select_from_list(
+        &users,
+        "Select User",
+        |u| format!("{} ({})", u.name, u.email),
+    )?;
     
     let user_id = users[user_idx].id.unwrap_or(0);
     

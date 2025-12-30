@@ -1,5 +1,4 @@
 use anyhow::Result;
-use dialoguer::Select;
 use chrono::{Local, Datelike};
 
 pub fn select_date_preset() -> Result<String> {
@@ -14,11 +13,7 @@ pub fn select_date_preset() -> Result<String> {
         "Custom Date".to_string(),
     ];
     
-    let selection = Select::new()
-        .with_prompt("Select Date")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let selection = select_with_number("Select Date", &options)?;
     
     Ok(match selection {
         0 => today.format("%Y-%m-%d").to_string(),
@@ -45,11 +40,7 @@ pub fn select_month_preset() -> Result<String> {
         "Custom Month".to_string(),
     ];
     
-    let selection = Select::new()
-        .with_prompt("Select Month")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let selection = select_with_number("Select Month", &options)?;
     
     Ok(match selection {
         0 => current_month,
@@ -70,27 +61,71 @@ pub fn select_from_list<T>(
 ) -> Result<usize> {
     let display_items: Vec<String> = items
         .iter()
-        .enumerate()
-        .map(|(i, item)| format!("{}. {}", i + 1, display_fn(item)))
+        .map(|item| display_fn(item))
         .collect();
     
-    Select::new()
-        .with_prompt(prompt)
-        .items(&display_items)
-        .default(0)
-        .interact()
-        .map_err(|e| anyhow::anyhow!("Selection error: {}", e))
+    select_with_number(prompt, &display_items)
 }
 
 pub fn select_multiple_from_list(
     items: &[String],
     prompt: &str,
 ) -> Result<Vec<usize>> {
-    use dialoguer::MultiSelect;
+    println!("\n{}", prompt);
+    println!("Enter numbers separated by commas (e.g., 1,3,5) or 'all' for all items:\n");
     
-    MultiSelect::new()
-        .with_prompt(prompt)
-        .items(items)
-        .interact()
-        .map_err(|e| anyhow::anyhow!("Selection error: {}", e))
+    for (i, item) in items.iter().enumerate() {
+        println!("  {}. {}", i + 1, item);
+    }
+    
+    loop {
+        use crate::ui::prompts::prompt_string;
+        let input = prompt_string("\nYour selection", None, false)?;
+        
+        if input.trim().to_lowercase() == "all" {
+            return Ok((0..items.len()).collect());
+        }
+        
+        let selections: Result<Vec<usize>, _> = input
+            .split(',')
+            .map(|s| s.trim().parse::<usize>())
+            .collect();
+        
+        match selections {
+            Ok(nums) => {
+                let valid: Vec<usize> = nums
+                    .into_iter()
+                    .filter(|&n| n > 0 && n <= items.len())
+                    .map(|n| n - 1)
+                    .collect();
+                
+                if valid.is_empty() {
+                    println!("❌ No valid selections. Please try again.");
+                    continue;
+                }
+                
+                return Ok(valid);
+            }
+            Err(_) => {
+                println!("❌ Invalid input. Please enter numbers separated by commas.");
+                continue;
+            }
+        }
+    }
+}
+
+// New helper function for number-based selection
+pub fn select_with_number(prompt: &str, items: &[String]) -> Result<usize> {
+    println!("\n{}", prompt);
+    println!();
+    
+    for (i, item) in items.iter().enumerate() {
+        println!("  {}. {}", i + 1, item);
+    }
+    
+    loop {
+        use crate::ui::prompts::prompt_int;
+        let selection = prompt_int("\nEnter number", None, Some(1), Some(items.len() as i32))?;
+        return Ok((selection - 1) as usize);
+    }
 }

@@ -1,5 +1,4 @@
 use anyhow::Result;
-use dialoguer::Select;
 use crate::api::ApiClient;
 use crate::config::Config;
 use crate::display::Display;
@@ -28,11 +27,8 @@ fn create_user(api: &ApiClient, display: &Display) -> Result<()> {
     let name = prompt_string("Name", None, false)?;
     let email = prompt_email("Email", None)?;
     
-    let role_idx = Select::new()
-        .with_prompt("Role")
-        .items(USER_ROLES)
-        .default(0)
-        .interact()?;
+    let role_options: Vec<String> = USER_ROLES.iter().map(|s| s.to_string()).collect();
+    let role_idx = select_with_number("Role", &role_options)?;
     let role = USER_ROLES[role_idx].to_string();
     
     print_info("Creating user...");
@@ -114,11 +110,10 @@ fn update_user(api: &ApiClient, display: &Display) -> Result<()> {
     let email = prompt_email("Email", Some(&current.email))?;
     
     let current_role_idx = USER_ROLES.iter().position(|&r| r == current.role).unwrap_or(0);
-    let role_idx = Select::new()
-        .with_prompt("Role")
-        .items(USER_ROLES)
-        .default(current_role_idx)
-        .interact()?;
+    let role_options: Vec<String> = USER_ROLES.iter().map(|s| s.to_string()).collect();
+    
+    println!("\nCurrent role: {}", USER_ROLES[current_role_idx]);
+    let role_idx = select_with_number("Role", &role_options)?;
     let role = USER_ROLES[role_idx].to_string();
     
     print_info("Updating user...");

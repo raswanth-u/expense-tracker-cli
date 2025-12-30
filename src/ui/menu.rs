@@ -1,5 +1,5 @@
 use anyhow::Result;
-use dialoguer::Select;
+use crate::ui::selectors::select_with_number;
 
 pub fn show_main_menu() -> Result<MainMenuOption> {
     println!("\n╔═══════════════════════════════════╗");
@@ -7,13 +7,13 @@ pub fn show_main_menu() -> Result<MainMenuOption> {
     println!("╚═══════════════════════════════════╝\n");
 
     let options = vec![
-        "👤 User Management",
-        "💰 Expense Management",
-        "📊 Budget Management",
-        "💳 Credit Card Management",
-        "📈 Reports & Analytics",
-        "⚙️  Settings",
-        "❌ Exit",
+        "👤 User Management".to_string(),
+        "💰 Expense Management".to_string(),
+        "📊 Budget Management".to_string(),
+        "💳 Credit Card Management".to_string(),
+        "📈 Reports & Analytics".to_string(),
+        "⚙️  Settings".to_string(),
+        "❌ Exit".to_string(),
     ];
 
     let quick_actions = vec![
@@ -27,13 +27,8 @@ pub fn show_main_menu() -> Result<MainMenuOption> {
     for action in &quick_actions {
         println!("{}", action);
     }
-    println!();
 
-    let selection = Select::new()
-        .with_prompt("Select option")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let selection = select_with_number("Select option", &options)?;
 
     Ok(match selection {
         0 => MainMenuOption::Users,
@@ -63,20 +58,16 @@ pub fn show_user_menu() -> Result<UserMenuOption> {
     println!("╚═══════════════════════════════════╝\n");
 
     let options = vec![
-        "Create New User",
-        "List All Users",
-        "View User Details",
-        "Update User",
-        "Deactivate User",
-        "View User Statistics",
-        "Back to Main Menu",
+        "Create New User".to_string(),
+        "List All Users".to_string(),
+        "View User Details".to_string(),
+        "Update User".to_string(),
+        "Deactivate User".to_string(),
+        "View User Statistics".to_string(),
+        "Back to Main Menu".to_string(),
     ];
 
-    let selection = Select::new()
-        .with_prompt("Select option")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let selection = select_with_number("Select option", &options)?;
 
     Ok(match selection {
         0 => UserMenuOption::Create,
@@ -106,21 +97,17 @@ pub fn show_expense_menu() -> Result<ExpenseMenuOption> {
     println!("╚═══════════════════════════════════╝\n");
 
     let options = vec![
-        "Create New Expense",
-        "List Expenses",
-        "View Expense Details",
-        "Update Expense",
-        "Delete Expense",
-        "View Summary by Category",
-        "View Summary by Payment Method",
-        "Back to Main Menu",
+        "Create New Expense".to_string(),
+        "List Expenses".to_string(),
+        "View Expense Details".to_string(),
+        "Update Expense".to_string(),
+        "Delete Expense".to_string(),
+        "View Summary by Category".to_string(),
+        "View Summary by Payment Method".to_string(),
+        "Back to Main Menu".to_string(),
     ];
 
-    let selection = Select::new()
-        .with_prompt("Select option")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let selection = select_with_number("Select option", &options)?;
 
     Ok(match selection {
         0 => ExpenseMenuOption::Create,
@@ -152,22 +139,18 @@ pub fn show_budget_menu() -> Result<BudgetMenuOption> {
     println!("╚═══════════════════════════════════╝\n");
 
     let options = vec![
-        "Create New Budget",
-        "List Budgets",
-        "View Budget Details",
-        "Update Budget",
-        "Delete Budget",
-        "View Budget Status",
-        "View Budget Alerts",
-        "Compare Budgets (Two Months)",
-        "Back to Main Menu",
+        "Create New Budget".to_string(),
+        "List Budgets".to_string(),
+        "View Budget Details".to_string(),
+        "Update Budget".to_string(),
+        "Delete Budget".to_string(),
+        "View Budget Status".to_string(),
+        "View Budget Alerts".to_string(),
+        "Compare Budgets (Two Months)".to_string(),
+        "Back to Main Menu".to_string(),
     ];
 
-    let selection = Select::new()
-        .with_prompt("Select option")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let selection = select_with_number("Select option", &options)?;
 
     Ok(match selection {
         0 => BudgetMenuOption::Create,
@@ -201,22 +184,18 @@ pub fn show_card_menu() -> Result<CardMenuOption> {
     println!("╚═══════════════════════════════════╝\n");
 
     let options = vec![
-        "Create New Credit Card",
-        "List Credit Cards",
-        "View Card Details",
-        "Update Card",
-        "Deactivate Card",
-        "View Billing Statement",
-        "View Utilization Trend",
-        "View All Cards Summary",
-        "Back to Main Menu",
+        "Create New Credit Card".to_string(),
+        "List Credit Cards".to_string(),
+        "View Card Details".to_string(),
+        "Update Card".to_string(),
+        "Deactivate Card".to_string(),
+        "View Billing Statement".to_string(),
+        "View Utilization Trend".to_string(),
+        "View All Cards Summary".to_string(),
+        "Back to Main Menu".to_string(),
     ];
 
-    let selection = Select::new()
-        .with_prompt("Select option")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let selection = select_with_number("Select option", &options)?;
 
     Ok(match selection {
         0 => CardMenuOption::Create,
@@ -250,20 +229,16 @@ pub fn show_report_menu() -> Result<ReportMenuOption> {
     println!("╚═══════════════════════════════════╝\n");
 
     let options = vec![
-        "Monthly Report",
-        "Family Summary",
-        "Category Analysis",
-        "Spending Trends",
-        "Payment Method Analysis",
-        "Export Data",
-        "Back to Main Menu",
+        "Monthly Report".to_string(),
+        "Family Summary".to_string(),
+        "Category Analysis".to_string(),
+        "Spending Trends".to_string(),
+        "Payment Method Analysis".to_string(),
+        "Export Data".to_string(),
+        "Back to Main Menu".to_string(),
     ];
 
-    let selection = Select::new()
-        .with_prompt("Select option")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let selection = select_with_number("Select option", &options)?;
 
     Ok(match selection {
         0 => ReportMenuOption::Monthly,
@@ -293,18 +268,14 @@ pub fn show_settings_menu() -> Result<SettingsMenuOption> {
     println!("╚═══════════════════════════════════╝\n");
 
     let options = vec![
-        "View Current Settings",
-        "Change Default User",
-        "Change Default Category",
-        "Toggle Recent Values",
-        "Back to Main Menu",
+        "View Current Settings".to_string(),
+        "Change Default User".to_string(),
+        "Change Default Category".to_string(),
+        "Toggle Recent Values".to_string(),
+        "Back to Main Menu".to_string(),
     ];
 
-    let selection = Select::new()
-        .with_prompt("Select option")
-        .items(&options)
-        .default(0)
-        .interact()?;
+    let selection = select_with_number("Select option", &options)?;
 
     Ok(match selection {
         0 => SettingsMenuOption::View,

@@ -1,5 +1,4 @@
 use anyhow::Result;
-use dialoguer::Select;
 use crate::api::ApiClient;
 use crate::config::Config;
 use crate::display::Display;
@@ -55,11 +54,8 @@ fn create_budget(api: &ApiClient, display: &Display) -> Result<()> {
         Some(users[user_idx].id.unwrap_or(0))
     };
     
-    let period_idx = Select::new()
-        .with_prompt("Period")
-        .items(BUDGET_PERIODS)
-        .default(0)
-        .interact()?;
+    let period_options: Vec<String> = BUDGET_PERIODS.iter().map(|s| s.to_string()).collect();
+    let period_idx = select_with_number("Period", &period_options)?;
     let period = BUDGET_PERIODS[period_idx].to_string();
     
     print_info("Creating budget...");
@@ -173,17 +169,11 @@ fn update_budget(api: &ApiClient, display: &Display) -> Result<()> {
         
         display.show("users", &users)?;
         
-        let default_user_idx = if let Some(uid) = current.user_id {
-            users.iter().position(|u| u.id.unwrap_or(0) == uid).unwrap_or(0)
-        } else {
-            0
-        };
-        
-        let user_idx = Select::new()
-            .with_prompt("Select User")
-            .items(&users.iter().map(|u| format!("{} ({})", u.name, u.email)).collect::<Vec<_>>())
-            .default(default_user_idx)
-            .interact()?;
+        let user_idx = select_from_list(
+            &users,
+            "Select User",
+            |u| format!("{} ({})", u.name, u.email),
+        )?;
         
         Some(users[user_idx].id.unwrap_or(0))
     };
@@ -192,11 +182,9 @@ fn update_budget(api: &ApiClient, display: &Display) -> Result<()> {
         .position(|&p| Some(p.to_string()) == current.period)
         .unwrap_or(0);
     
-    let period_idx = Select::new()
-        .with_prompt("Period")
-        .items(BUDGET_PERIODS)
-        .default(current_period_idx)
-        .interact()?;
+    println!("\nCurrent period: {}", BUDGET_PERIODS[current_period_idx]);
+    let period_options: Vec<String> = BUDGET_PERIODS.iter().map(|s| s.to_string()).collect();
+    let period_idx = select_with_number("Period", &period_options)?;
     let period = BUDGET_PERIODS[period_idx].to_string();
     
     print_info("Updating budget...");
