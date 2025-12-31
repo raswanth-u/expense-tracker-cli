@@ -97,3 +97,117 @@ pub struct ExpenseFilters {
     pub is_recurring: Option<bool>,
     pub tags: Option<String>,
 }
+
+// ============================================
+// SAVINGS GOAL MODELS
+// ============================================
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SavingsGoal {
+    pub id: Option<i32>,
+    pub user_id: i32,
+    pub name: String,
+    pub target_amount: f64,
+    pub current_amount: f64,
+    pub deadline: String,
+    pub description: Option<String>,
+    pub is_active: Option<bool>,
+    pub created_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SavingsGoalCreate {
+    pub user_id: i32,
+    pub name: String,
+    pub target_amount: f64,
+    pub current_amount: f64,
+    pub deadline: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SavingsGoalUpdate {
+    pub amount: f64,
+}
+
+// ============================================
+// ASSET MODELS
+// ============================================
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Asset {
+    pub id: Option<i32>,
+    pub user_id: i32,
+    pub name: String,
+    pub asset_type: String,
+    pub purchase_value: f64,
+    pub current_value: f64,
+    pub purchase_date: String,
+    pub description: Option<String>,
+    pub location: Option<String>,
+    pub is_active: Option<bool>,
+    pub created_at: Option<String>,
+    pub updated_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AssetCreate {
+    pub user_id: i32,
+    pub name: String,
+    pub asset_type: String,
+    pub purchase_value: f64,
+    pub current_value: f64,
+    pub purchase_date: String,
+    pub description: Option<String>,
+    pub location: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AssetValueUpdate {
+    pub current_value: f64,
+}
+
+// ============================================
+// RECURRING EXPENSE MODELS
+// ============================================
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RecurringExpenseTemplate {
+    pub id: Option<i32>,
+    pub user_id: i32,
+    pub amount: f64,
+    pub category: String,
+    pub description: Option<String>,
+    pub payment_method: String,
+    pub credit_card_id: Option<i32>,
+    pub frequency: String,
+    pub interval: i32,
+    pub day_of_week: Option<i32>,
+    pub day_of_month: Option<i32>,
+    pub month_of_year: Option<i32>,
+    pub start_date: String,
+    pub end_date: Option<String>,
+    pub next_occurrence: String,
+    pub last_generated: Option<String>,
+    pub is_active: Option<bool>,
+    pub tags: Option<String>,
+    pub created_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RecurringExpenseTemplateCreate {
+    pub user_id: i32,
+    pub amount: f64,
+    pub category: String,
+    pub description: Option<String>,
+    pub payment_method: String,
+    pub credit_card_id: Option<i32>,
+    pub frequency: String,
+    pub interval: i32,
+    pub day_of_week: Option<i32>,
+    pub day_of_month: Option<i32>,
+    pub month_of_year: Option<i32>,
+    pub start_date: String,
+    pub end_date: Option<String>,
+    pub tags: Option<String>,
+}

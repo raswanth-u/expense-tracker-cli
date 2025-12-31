@@ -7,8 +7,15 @@ pub fn show_main_menu() -> Result<MainMenuOption> {
     println!("╚═══════════════════════════════════╝\n");
 
     let options = vec![
+        "📊 Dashboard".to_string(),
+        "🔍 Search Expenses".to_string(),
+        "🔔 Budget Alerts".to_string(),
+        "💾 Backup & Restore".to_string(),
+        "💰 Savings Goals".to_string(),
+        "🏠 Asset Management".to_string(),
+        "🔄 Recurring Expenses".to_string(),      
         "👤 User Management".to_string(),
-        "💰 Expense Management".to_string(),
+        "💸 Expense Management".to_string(),
         "📊 Budget Management".to_string(),
         "💳 Credit Card Management".to_string(),
         "📈 Reports & Analytics".to_string(),
@@ -18,10 +25,18 @@ pub fn show_main_menu() -> Result<MainMenuOption> {
 
     let quick_actions = vec![
         "",
-        "Quick Actions:",
-        "  q - Quick Expense",
-        "  t - Today's Summary",
-        "  m - This Month's Report",
+        "💡 Quick Actions (use with -q flag):",
+        "   ./expense -q d  →  Dashboard",
+        "   ./expense -q s  →  Search",
+        "   ./expense -q a  →  Alerts",
+        "   ./expense -q b  →  Backup",
+        "   ./expense -q g  →  Savings Goals",
+        "   ./expense -q v  →  Assets",
+        "   ./expense -q r  →  Recurring Expenses",  
+        "   ./expense -q q  →  Quick Expense",
+        "   ./expense -q t  →  Today's Summary",
+        "   ./expense -q m  →  This Month's Report",
+        "",
     ];
 
     for action in &quick_actions {
@@ -31,18 +46,32 @@ pub fn show_main_menu() -> Result<MainMenuOption> {
     let selection = select_with_number("Select option", &options)?;
 
     Ok(match selection {
-        0 => MainMenuOption::Users,
-        1 => MainMenuOption::Expenses,
-        2 => MainMenuOption::Budgets,
-        3 => MainMenuOption::Cards,
-        4 => MainMenuOption::Reports,
-        5 => MainMenuOption::Settings,
-        6 => MainMenuOption::Exit,
+        0 => MainMenuOption::Dashboard,
+        1 => MainMenuOption::Search,
+        2 => MainMenuOption::Alerts,
+        3 => MainMenuOption::Backup,
+        4 => MainMenuOption::Savings,
+        5 => MainMenuOption::Assets,
+        6 => MainMenuOption::Recurring,           
+        7 => MainMenuOption::Users,
+        8 => MainMenuOption::Expenses,
+        9 => MainMenuOption::Budgets,
+        10 => MainMenuOption::Cards,
+        11 => MainMenuOption::Reports,
+        12 => MainMenuOption::Settings,
+        13 => MainMenuOption::Exit,
         _ => MainMenuOption::Exit,
     })
 }
 
 pub enum MainMenuOption {
+    Dashboard,
+    Search,
+    Alerts,
+    Backup,
+    Savings,
+    Assets,
+    Recurring,  
     Users,
     Expenses,
     Budgets,

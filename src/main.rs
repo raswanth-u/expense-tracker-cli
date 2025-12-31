@@ -29,6 +29,9 @@ fn main() -> Result<()> {
     let api = ApiClient::new(&config)?;
     let display = Display::new(&config);
     
+    // Check for alerts on startup
+    let _ = commands::check_alerts_on_startup(&api);
+    
     // Handle quick actions
     if let Some(action) = cli.quick {
         return handle_quick_action(&action, &api, &display, &config);
@@ -37,6 +40,13 @@ fn main() -> Result<()> {
     // Main interactive loop
     loop {
         match show_main_menu()? {
+            MainMenuOption::Dashboard => commands::show_dashboard(&api, &display)?,
+            MainMenuOption::Search => commands::handle_search(&api, &display)?,
+            MainMenuOption::Alerts => commands::handle_alerts(&api, &display)?,
+            MainMenuOption::Backup => commands::handle_backup(&api, &display)?,
+            MainMenuOption::Savings => commands::handle_savings(&api, &display)?,
+            MainMenuOption::Assets => commands::handle_assets(&api, &display)?,  
+            MainMenuOption::Recurring => commands::handle_recurring(&api, &display)?,
             MainMenuOption::Users => commands::handle_users(&api, &display, &config)?,
             MainMenuOption::Expenses => commands::handle_expenses(&api, &display, &config)?,
             MainMenuOption::Budgets => commands::handle_budgets(&api, &display, &config)?,
@@ -60,12 +70,26 @@ fn handle_quick_action(
     config: &Config,
 ) -> Result<()> {
     match action.to_lowercase().as_str() {
+        "d" | "dashboard" => commands::show_dashboard(api, display)?,
+        "s" | "search" => commands::handle_search(api, display)?,
+        "a" | "alerts" => commands::handle_alerts(api, display)?,
+        "b" | "backup" => commands::handle_backup(api, display)?,
+        "g" | "goals" | "savings" => commands::handle_savings(api, display)?,
+        "w" | "wealth" | "assets" => commands::handle_assets(api, display)?,  
+        "r" | "recurring" => commands::handle_recurring(api, display)?,
         "q" | "quick" => quick_expense(api, display, config)?,
         "t" | "today" => today_summary(api, display)?,
         "m" | "month" => month_summary(api, display)?,
         _ => {
             print_error(&format!("Unknown quick action: {}", action));
             println!("Available quick actions:");
+            println!("  d, dashboard - Dashboard view");
+            println!("  s, search - Search expenses");
+            println!("  a, alerts - Budget alerts");
+            println!("  b, backup - Backup & Restore");
+            println!("  g, goals, savings - Savings Goals");
+            println!("  w, wealth, assets - Asset Management");  
+            println!("  r, recurring - Recurring Expenses");
             println!("  q, quick - Quick expense entry");
             println!("  t, today - Today's summary");
             println!("  m, month - This month's summary");

@@ -87,6 +87,41 @@ pub const CATEGORY_KEYWORDS: &[(&str, &str)] = &[
     ("vacation", "Travel"),
 ];
 
+// Asset types
+pub const ASSET_TYPES: &[&str] = &[
+    "property",
+    "vehicle",
+    "investment",
+    "electronics",
+    "jewelry",
+    "furniture",
+    "art",
+    "collectibles",
+    "other",
+];
+
+// ... existing constants ...
+
+// Recurring expense frequencies
+pub const RECURRING_FREQUENCIES: &[&str] = &[
+    "daily",
+    "weekly",
+    "monthly",
+    "yearly",
+    "custom",
+];
+
+// Days of week
+pub const DAYS_OF_WEEK: &[&str] = &[
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+];
+
 // Smart category suggestion
 pub fn suggest_category(description: &str) -> Option<&'static str> {
     let desc_lower = description.to_lowercase();
