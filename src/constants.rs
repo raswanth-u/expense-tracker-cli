@@ -22,7 +22,14 @@ pub const PAYMENT_METHODS: &[&str] = &[
     "cash",
     "debit_card",
     "credit_card",
-    "upi",
+    "savings_account",  // NEW (removed upi)
+];
+
+// Account types
+pub const ACCOUNT_TYPES: &[&str] = &[
+    "savings",
+    "checking",
+    "money_market",
 ];
 
 // Budget periods

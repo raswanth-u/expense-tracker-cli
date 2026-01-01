@@ -1,115 +1,108 @@
+//! # Menu System
+//!
+//! Provides a unified menu system using a generic approach to reduce code duplication.
+
 use anyhow::Result;
 use crate::ui::selectors::select_with_number;
 
-pub fn show_main_menu() -> Result<MainMenuOption> {
-    println!("\n╔═══════════════════════════════════╗");
-    println!("║   Family Expense Tracker CLI      ║");
-    println!("╚═══════════════════════════════════╝\n");
+// ============================================================================
+// GENERIC MENU BUILDER
+// ============================================================================
 
-    let options = vec![
-        "📊 Dashboard".to_string(),
-        "🔍 Search Expenses".to_string(),
-        "🔔 Budget Alerts".to_string(),
-        "💾 Backup & Restore".to_string(),
-        "💰 Savings Goals".to_string(),
-        "🏠 Asset Management".to_string(),
-        "🔄 Recurring Expenses".to_string(),      
-        "👤 User Management".to_string(),
-        "💸 Expense Management".to_string(),
-        "📊 Budget Management".to_string(),
-        "💳 Credit Card Management".to_string(),
-        "📈 Reports & Analytics".to_string(),
-        "⚙️  Settings".to_string(),
-        "❌ Exit".to_string(),
-    ];
+/// Generic function to display a menu and get user selection
+pub fn show_menu<T: Clone>(title: &str, options: &[(&str, T)]) -> Result<T> {
+    println!("\n╔═══════════════════════════════════════╗");
+    println!("║ {:^37} ║", title);
+    println!("╚═══════════════════════════════════════╝\n");
 
-    let quick_actions = vec![
-        "",
-        "💡 Quick Actions (use with -q flag):",
-        "   ./expense -q d  →  Dashboard",
-        "   ./expense -q s  →  Search",
-        "   ./expense -q a  →  Alerts",
-        "   ./expense -q b  →  Backup",
-        "   ./expense -q g  →  Savings Goals",
-        "   ./expense -q v  →  Assets",
-        "   ./expense -q r  →  Recurring Expenses",  
-        "   ./expense -q q  →  Quick Expense",
-        "   ./expense -q t  →  Today's Summary",
-        "   ./expense -q m  →  This Month's Report",
-        "",
-    ];
-
-    for action in &quick_actions {
-        println!("{}", action);
-    }
-
-    let selection = select_with_number("Select option", &options)?;
-
-    Ok(match selection {
-        0 => MainMenuOption::Dashboard,
-        1 => MainMenuOption::Search,
-        2 => MainMenuOption::Alerts,
-        3 => MainMenuOption::Backup,
-        4 => MainMenuOption::Savings,
-        5 => MainMenuOption::Assets,
-        6 => MainMenuOption::Recurring,           
-        7 => MainMenuOption::Users,
-        8 => MainMenuOption::Expenses,
-        9 => MainMenuOption::Budgets,
-        10 => MainMenuOption::Cards,
-        11 => MainMenuOption::Reports,
-        12 => MainMenuOption::Settings,
-        13 => MainMenuOption::Exit,
-        _ => MainMenuOption::Exit,
-    })
+    let labels: Vec<String> = options.iter().map(|(label, _)| label.to_string()).collect();
+    let selection = select_with_number("Select option", &labels)?;
+    
+    Ok(options[selection].1.clone())
 }
 
+// ============================================================================
+// MAIN MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
 pub enum MainMenuOption {
-    Dashboard,
-    Search,
-    Alerts,
-    Backup,
-    Savings,
-    Assets,
-    Recurring,  
-    Users,
     Expenses,
     Budgets,
+    Users,
     Cards,
+    DebitCards,
+    SavingsAccounts,
+    SavingsGoals,
+    Assets,
+    Recurring,
     Reports,
-    Settings,
+    Search,
+    Backup,
     Exit,
 }
 
-pub fn show_user_menu() -> Result<UserMenuOption> {
-    println!("\n╔═══════════════════════════════════╗");
-    println!("║      User Management Menu         ║");
-    println!("╚═══════════════════════════════════╝\n");
+pub fn show_main_menu() -> Result<MainMenuOption> {
+    println!("\n╔═══════════════════════════════════════╗");
+    println!("║     Family Expense Tracker CLI        ║");
+    println!("╚═══════════════════════════════════════╝\n");
 
     let options = vec![
-        "Create New User".to_string(),
-        "List All Users".to_string(),
-        "View User Details".to_string(),
-        "Update User".to_string(),
-        "Deactivate User".to_string(),
-        "View User Statistics".to_string(),
-        "Back to Main Menu".to_string(),
+        ("💸 Expense Management", MainMenuOption::Expenses),
+        ("📊 Budget Management", MainMenuOption::Budgets),
+        ("👤 User Management", MainMenuOption::Users),
+        ("💳 Credit Cards", MainMenuOption::Cards),
+        ("💳 Debit Cards", MainMenuOption::DebitCards),
+        ("🏦 Savings Accounts", MainMenuOption::SavingsAccounts),
+        ("🎯 Savings Goals", MainMenuOption::SavingsGoals),
+        ("🏠 Assets", MainMenuOption::Assets),
+        ("🔄 Recurring Expenses", MainMenuOption::Recurring),
+        ("📈 Reports & Analytics", MainMenuOption::Reports),
+        ("🔍 Search", MainMenuOption::Search),
+        ("💾 Backup & Restore", MainMenuOption::Backup),
+        ("❌ Exit", MainMenuOption::Exit),
     ];
 
-    let selection = select_with_number("Select option", &options)?;
-
-    Ok(match selection {
-        0 => UserMenuOption::Create,
-        1 => UserMenuOption::List,
-        2 => UserMenuOption::View,
-        3 => UserMenuOption::Update,
-        4 => UserMenuOption::Deactivate,
-        5 => UserMenuOption::Stats,
-        6 => UserMenuOption::Back,
-        _ => UserMenuOption::Back,
-    })
+    let labels: Vec<String> = options.iter().map(|(l, _)| l.to_string()).collect();
+    let selection = select_with_number("Select option", &labels)?;
+    
+    Ok(options[selection].1.clone())
 }
 
+// ============================================================================
+// CRUD MENU OPTIONS (Shared across entities)
+// ============================================================================
+
+#[derive(Clone, Debug)]
+pub enum CrudOption {
+    Create,
+    List,
+    View,
+    Update,
+    Delete,
+    Back,
+}
+
+/// Standard CRUD menu for entities
+pub fn show_crud_menu(entity_name: &str) -> Result<CrudOption> {
+    show_menu(
+        &format!("{} Management", entity_name),
+        &[
+            ("➕ Create New", CrudOption::Create),
+            ("📋 List All", CrudOption::List),
+            ("🔍 View Details", CrudOption::View),
+            ("✏️  Update", CrudOption::Update),
+            ("🗑️  Delete", CrudOption::Delete),
+            ("🔙 Back", CrudOption::Back),
+        ],
+    )
+}
+
+// ============================================================================
+// USER MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
 pub enum UserMenuOption {
     Create,
     List,
@@ -120,37 +113,26 @@ pub enum UserMenuOption {
     Back,
 }
 
-pub fn show_expense_menu() -> Result<ExpenseMenuOption> {
-    println!("\n╔═══════════════════════════════════╗");
-    println!("║     Expense Management Menu       ║");
-    println!("╚═══════════════════════════════════╝\n");
-
-    let options = vec![
-        "Create New Expense".to_string(),
-        "List Expenses".to_string(),
-        "View Expense Details".to_string(),
-        "Update Expense".to_string(),
-        "Delete Expense".to_string(),
-        "View Summary by Category".to_string(),
-        "View Summary by Payment Method".to_string(),
-        "Back to Main Menu".to_string(),
-    ];
-
-    let selection = select_with_number("Select option", &options)?;
-
-    Ok(match selection {
-        0 => ExpenseMenuOption::Create,
-        1 => ExpenseMenuOption::List,
-        2 => ExpenseMenuOption::View,
-        3 => ExpenseMenuOption::Update,
-        4 => ExpenseMenuOption::Delete,
-        5 => ExpenseMenuOption::SummaryByCategory,
-        6 => ExpenseMenuOption::SummaryByPayment,
-        7 => ExpenseMenuOption::Back,
-        _ => ExpenseMenuOption::Back,
-    })
+pub fn show_user_menu() -> Result<UserMenuOption> {
+    show_menu(
+        "User Management",
+        &[
+            ("➕ Create New User", UserMenuOption::Create),
+            ("📋 List Users", UserMenuOption::List),
+            ("🔍 View User Details", UserMenuOption::View),
+            ("✏️  Update User", UserMenuOption::Update),
+            ("⏸️  Deactivate User", UserMenuOption::Deactivate),
+            ("📊 User Statistics", UserMenuOption::Stats),
+            ("🔙 Back", UserMenuOption::Back),
+        ],
+    )
 }
 
+// ============================================================================
+// EXPENSE MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
 pub enum ExpenseMenuOption {
     Create,
     List,
@@ -162,39 +144,27 @@ pub enum ExpenseMenuOption {
     Back,
 }
 
-pub fn show_budget_menu() -> Result<BudgetMenuOption> {
-    println!("\n╔═══════════════════════════════════╗");
-    println!("║      Budget Management Menu       ║");
-    println!("╚═══════════════════════════════════╝\n");
-
-    let options = vec![
-        "Create New Budget".to_string(),
-        "List Budgets".to_string(),
-        "View Budget Details".to_string(),
-        "Update Budget".to_string(),
-        "Delete Budget".to_string(),
-        "View Budget Status".to_string(),
-        "View Budget Alerts".to_string(),
-        "Compare Budgets (Two Months)".to_string(),
-        "Back to Main Menu".to_string(),
-    ];
-
-    let selection = select_with_number("Select option", &options)?;
-
-    Ok(match selection {
-        0 => BudgetMenuOption::Create,
-        1 => BudgetMenuOption::List,
-        2 => BudgetMenuOption::View,
-        3 => BudgetMenuOption::Update,
-        4 => BudgetMenuOption::Delete,
-        5 => BudgetMenuOption::Status,
-        6 => BudgetMenuOption::Alerts,
-        7 => BudgetMenuOption::Compare,
-        8 => BudgetMenuOption::Back,
-        _ => BudgetMenuOption::Back,
-    })
+pub fn show_expense_menu() -> Result<ExpenseMenuOption> {
+    show_menu(
+        "Expense Management",
+        &[
+            ("➕ Create Expense", ExpenseMenuOption::Create),
+            ("📋 List Expenses", ExpenseMenuOption::List),
+            ("🔍 View Expense", ExpenseMenuOption::View),
+            ("✏️  Update Expense", ExpenseMenuOption::Update),
+            ("🗑️  Delete Expense", ExpenseMenuOption::Delete),
+            ("📊 Summary by Category", ExpenseMenuOption::SummaryByCategory),
+            ("💳 Summary by Payment", ExpenseMenuOption::SummaryByPayment),
+            ("🔙 Back", ExpenseMenuOption::Back),
+        ],
+    )
 }
 
+// ============================================================================
+// BUDGET MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
 pub enum BudgetMenuOption {
     Create,
     List,
@@ -207,39 +177,28 @@ pub enum BudgetMenuOption {
     Back,
 }
 
-pub fn show_card_menu() -> Result<CardMenuOption> {
-    println!("\n╔═══════════════════════════════════╗");
-    println!("║   Credit Card Management Menu     ║");
-    println!("╚═══════════════════════════════════╝\n");
-
-    let options = vec![
-        "Create New Credit Card".to_string(),
-        "List Credit Cards".to_string(),
-        "View Card Details".to_string(),
-        "Update Card".to_string(),
-        "Deactivate Card".to_string(),
-        "View Billing Statement".to_string(),
-        "View Utilization Trend".to_string(),
-        "View All Cards Summary".to_string(),
-        "Back to Main Menu".to_string(),
-    ];
-
-    let selection = select_with_number("Select option", &options)?;
-
-    Ok(match selection {
-        0 => CardMenuOption::Create,
-        1 => CardMenuOption::List,
-        2 => CardMenuOption::View,
-        3 => CardMenuOption::Update,
-        4 => CardMenuOption::Deactivate,
-        5 => CardMenuOption::Statement,
-        6 => CardMenuOption::Utilization,
-        7 => CardMenuOption::Summary,
-        8 => CardMenuOption::Back,
-        _ => CardMenuOption::Back,
-    })
+pub fn show_budget_menu() -> Result<BudgetMenuOption> {
+    show_menu(
+        "Budget Management",
+        &[
+            ("➕ Create Budget", BudgetMenuOption::Create),
+            ("📋 List Budgets", BudgetMenuOption::List),
+            ("🔍 View Budget", BudgetMenuOption::View),
+            ("✏️  Update Budget", BudgetMenuOption::Update),
+            ("🗑️  Delete Budget", BudgetMenuOption::Delete),
+            ("📊 Budget Status", BudgetMenuOption::Status),
+            ("🔔 Budget Alerts", BudgetMenuOption::Alerts),
+            ("⚖️  Compare Months", BudgetMenuOption::Compare),
+            ("🔙 Back", BudgetMenuOption::Back),
+        ],
+    )
 }
 
+// ============================================================================
+// CREDIT CARD MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
 pub enum CardMenuOption {
     Create,
     List,
@@ -252,35 +211,60 @@ pub enum CardMenuOption {
     Back,
 }
 
-pub fn show_report_menu() -> Result<ReportMenuOption> {
-    println!("\n╔═══════════════════════════════════╗");
-    println!("║     Reports & Analytics Menu      ║");
-    println!("╚═══════════════════════════════════╝\n");
-
-    let options = vec![
-        "Monthly Report".to_string(),
-        "Family Summary".to_string(),
-        "Category Analysis".to_string(),
-        "Spending Trends".to_string(),
-        "Payment Method Analysis".to_string(),
-        "Export Data".to_string(),
-        "Back to Main Menu".to_string(),
-    ];
-
-    let selection = select_with_number("Select option", &options)?;
-
-    Ok(match selection {
-        0 => ReportMenuOption::Monthly,
-        1 => ReportMenuOption::Family,
-        2 => ReportMenuOption::Category,
-        3 => ReportMenuOption::Trends,
-        4 => ReportMenuOption::Payments,
-        5 => ReportMenuOption::Export,
-        6 => ReportMenuOption::Back,
-        _ => ReportMenuOption::Back,
-    })
+pub fn show_card_menu() -> Result<CardMenuOption> {
+    show_menu(
+        "Credit Card Management",
+        &[
+            ("➕ Add Credit Card", CardMenuOption::Create),
+            ("📋 List Cards", CardMenuOption::List),
+            ("🔍 View Card", CardMenuOption::View),
+            ("✏️  Update Card", CardMenuOption::Update),
+            ("⏸️  Deactivate Card", CardMenuOption::Deactivate),
+            ("📄 Billing Statement", CardMenuOption::Statement),
+            ("📈 Utilization Trend", CardMenuOption::Utilization),
+            ("📊 All Cards Summary", CardMenuOption::Summary),
+            ("🔙 Back", CardMenuOption::Back),
+        ],
+    )
 }
 
+// ============================================================================
+// DEBIT CARD MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
+pub enum DebitMenuOption {
+    Create,
+    List,
+    View,
+    Update,
+    Deactivate,
+    Transactions,
+    Summary,
+    Back,
+}
+
+pub fn show_debit_menu() -> Result<DebitMenuOption> {
+    show_menu(
+        "Debit Card Management",
+        &[
+            ("➕ Add Debit Card", DebitMenuOption::Create),
+            ("📋 List Cards", DebitMenuOption::List),
+            ("🔍 View Card", DebitMenuOption::View),
+            ("✏️  Update Card", DebitMenuOption::Update),
+            ("⏸️  Deactivate Card", DebitMenuOption::Deactivate),
+            ("📊 Transactions", DebitMenuOption::Transactions),
+            ("📋 Summary", DebitMenuOption::Summary),
+            ("🔙 Back", DebitMenuOption::Back),
+        ],
+    )
+}
+
+// ============================================================================
+// REPORT MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
 pub enum ReportMenuOption {
     Monthly,
     Family,
@@ -291,35 +275,193 @@ pub enum ReportMenuOption {
     Back,
 }
 
-pub fn show_settings_menu() -> Result<SettingsMenuOption> {
-    println!("\n╔═══════════════════════════════════╗");
-    println!("║         Settings Menu             ║");
-    println!("╚═══════════════════════════════════╝\n");
-
-    let options = vec![
-        "View Current Settings".to_string(),
-        "Change Default User".to_string(),
-        "Change Default Category".to_string(),
-        "Toggle Recent Values".to_string(),
-        "Back to Main Menu".to_string(),
-    ];
-
-    let selection = select_with_number("Select option", &options)?;
-
-    Ok(match selection {
-        0 => SettingsMenuOption::View,
-        1 => SettingsMenuOption::ChangeDefaultUser,
-        2 => SettingsMenuOption::ChangeDefaultCategory,
-        3 => SettingsMenuOption::ToggleRecentValues,
-        4 => SettingsMenuOption::Back,
-        _ => SettingsMenuOption::Back,
-    })
+pub fn show_report_menu() -> Result<ReportMenuOption> {
+    show_menu(
+        "Reports & Analytics",
+        &[
+            ("📅 Monthly Report", ReportMenuOption::Monthly),
+            ("👨‍👩‍👧‍👦 Family Summary", ReportMenuOption::Family),
+            ("📂 Category Analysis", ReportMenuOption::Category),
+            ("📈 Spending Trends", ReportMenuOption::Trends),
+            ("💳 Payment Analysis", ReportMenuOption::Payments),
+            ("📤 Export Data", ReportMenuOption::Export),
+            ("🔙 Back", ReportMenuOption::Back),
+        ],
+    )
 }
 
+// ============================================================================
+// SAVINGS GOALS MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
+pub enum SavingsMenuOption {
+    Create,
+    List,
+    View,
+    Deposit,
+    Withdraw,
+    Delete,
+    Back,
+}
+
+pub fn show_savings_menu() -> Result<SavingsMenuOption> {
+    show_menu(
+        "Savings Goals",
+        &[
+            ("➕ Create Goal", SavingsMenuOption::Create),
+            ("📋 List Goals", SavingsMenuOption::List),
+            ("🔍 View Progress", SavingsMenuOption::View),
+            ("💰 Add Funds", SavingsMenuOption::Deposit),
+            ("💸 Withdraw", SavingsMenuOption::Withdraw),
+            ("🗑️  Delete Goal", SavingsMenuOption::Delete),
+            ("🔙 Back", SavingsMenuOption::Back),
+        ],
+    )
+}
+
+// ============================================================================
+// SAVINGS ACCOUNTS MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
+pub enum SavingsAccountMenuOption {
+    Create,
+    List,
+    View,
+    Deposit,
+    Withdraw,
+    Transactions,
+    Delete,
+    Back,
+}
+
+pub fn show_savings_account_menu() -> Result<SavingsAccountMenuOption> {
+    show_menu(
+        "Savings Accounts",
+        &[
+            ("➕ Add Account", SavingsAccountMenuOption::Create),
+            ("📋 List Accounts", SavingsAccountMenuOption::List),
+            ("🔍 View Account", SavingsAccountMenuOption::View),
+            ("💰 Deposit", SavingsAccountMenuOption::Deposit),
+            ("💸 Withdraw", SavingsAccountMenuOption::Withdraw),
+            ("📜 Transactions", SavingsAccountMenuOption::Transactions),
+            ("🗑️  Delete Account", SavingsAccountMenuOption::Delete),
+            ("🔙 Back", SavingsAccountMenuOption::Back),
+        ],
+    )
+}
+
+// ============================================================================
+// ASSET MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
+pub enum AssetMenuOption {
+    Create,
+    List,
+    View,
+    Update,
+    UpdateValue,
+    Delete,
+    Summary,
+    Back,
+}
+
+pub fn show_asset_menu() -> Result<AssetMenuOption> {
+    show_menu(
+        "Asset Management",
+        &[
+            ("➕ Add Asset", AssetMenuOption::Create),
+            ("📋 List Assets", AssetMenuOption::List),
+            ("🔍 View Asset", AssetMenuOption::View),
+            ("✏️  Update Asset", AssetMenuOption::Update),
+            ("💰 Update Value", AssetMenuOption::UpdateValue),
+            ("🗑️  Delete Asset", AssetMenuOption::Delete),
+            ("📊 Assets Summary", AssetMenuOption::Summary),
+            ("🔙 Back", AssetMenuOption::Back),
+        ],
+    )
+}
+
+// ============================================================================
+// RECURRING EXPENSE MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
+pub enum RecurringMenuOption {
+    Create,
+    List,
+    View,
+    Update,
+    Generate,
+    Pause,
+    Delete,
+    Back,
+}
+
+pub fn show_recurring_menu() -> Result<RecurringMenuOption> {
+    show_menu(
+        "Recurring Expenses",
+        &[
+            ("➕ Create Template", RecurringMenuOption::Create),
+            ("📋 List Templates", RecurringMenuOption::List),
+            ("🔍 View Template", RecurringMenuOption::View),
+            ("✏️  Update Template", RecurringMenuOption::Update),
+            ("⚡ Generate Expenses", RecurringMenuOption::Generate),
+            ("⏸️  Pause/Resume", RecurringMenuOption::Pause),
+            ("🗑️  Delete Template", RecurringMenuOption::Delete),
+            ("🔙 Back", RecurringMenuOption::Back),
+        ],
+    )
+}
+
+// ============================================================================
+// BACKUP MENU
+// ============================================================================
+
+#[derive(Clone, Debug)]
+pub enum BackupMenuOption {
+    Create,
+    Restore,
+    List,
+    Back,
+}
+
+pub fn show_backup_menu() -> Result<BackupMenuOption> {
+    show_menu(
+        "Backup & Restore",
+        &[
+            ("💾 Create Backup", BackupMenuOption::Create),
+            ("📥 Restore Backup", BackupMenuOption::Restore),
+            ("📋 List Backups", BackupMenuOption::List),
+            ("🔙 Back", BackupMenuOption::Back),
+        ],
+    )
+}
+
+// ============================================================================
+// SETTINGS MENU (kept for compatibility but simplified)
+// ============================================================================
+
+#[derive(Clone, Debug)]
 pub enum SettingsMenuOption {
     View,
     ChangeDefaultUser,
     ChangeDefaultCategory,
     ToggleRecentValues,
     Back,
+}
+
+pub fn show_settings_menu() -> Result<SettingsMenuOption> {
+    show_menu(
+        "Settings",
+        &[
+            ("👁️  View Settings", SettingsMenuOption::View),
+            ("👤 Default User", SettingsMenuOption::ChangeDefaultUser),
+            ("📂 Default Category", SettingsMenuOption::ChangeDefaultCategory),
+            ("🔄 Toggle Recent Values", SettingsMenuOption::ToggleRecentValues),
+            ("🔙 Back", SettingsMenuOption::Back),
+        ],
+    )
 }

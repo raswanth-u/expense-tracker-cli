@@ -118,6 +118,33 @@ def display_credit_cards(cards: List[Dict[str, Any]]) -> None:
     console.print(table)
 
 
+def display_debit_cards(cards: List[Dict[str, Any]]) -> None:
+    """Display debit cards in a formatted table."""
+    if not cards:
+        console.print("[yellow]No debit cards found[/yellow]")
+        return
+    
+    table = Table(title="💳 Debit Cards", box=box.ROUNDED)
+    table.add_column("ID", style="cyan", justify="right")
+    table.add_column("Name", style="green")
+    table.add_column("Last 4", style="blue")
+    table.add_column("Linked Account", style="magenta")
+    table.add_column("Account Balance", style="yellow", justify="right")
+    table.add_column("Owner ID", style="red", justify="right")
+    
+    for card in cards:
+        table.add_row(
+            str(card.get("id", "")),
+            card.get("card_name", ""),
+            f"****{card.get('last_four', '')}",
+            card.get("account_name", "N/A"),
+            f"${card.get('account_balance', 0):,.2f}",
+            str(card.get("user_id", ""))
+        )
+    
+    console.print(table)
+
+
 def display_budget_status(status: Dict[str, Any]) -> None:
     """Display budget status with alerts."""
     console.print(Panel.fit(
@@ -276,6 +303,69 @@ def display_expense_summary(summary: List[Dict[str, Any]]) -> None:
     
     console.print(table)
     console.print(f"\n[bold]Grand Total:[/bold] [green]${total_amount:,.2f}[/green] ({total_count} transactions)")
+
+
+def display_expense_details(data: Dict[str, Any]) -> None:
+    """Display detailed expense information with all linked data."""
+    expense = data.get("expense", {})
+    user = data.get("user", {})
+    
+    console.print(Panel.fit("[bold]💰 Expense Details[/bold]", border_style="green"))
+    
+    # Main expense info
+    table = Table(box=box.ROUNDED, show_header=False)
+    table.add_column("Field", style="cyan", width=20)
+    table.add_column("Value", style="white")
+    
+    table.add_row("Expense ID", str(expense.get("id", "")))
+    table.add_row("Date", expense.get("date", ""))
+    table.add_row("Amount", f"[green]${expense.get('amount', 0):,.2f}[/green]")
+    table.add_row("Category", expense.get("category", ""))
+    table.add_row("Description", expense.get("description", "") or "N/A")
+    table.add_row("Payment Method", expense.get("payment_method", ""))
+    table.add_row("Is Recurring", "Yes" if expense.get("is_recurring") else "No")
+    table.add_row("Tags", expense.get("tags", "") or "N/A")
+    console.print(table)
+    
+    # User info
+    console.print("\n[bold]👤 User[/bold]")
+    console.print(f"  Name: [cyan]{user.get('name', 'N/A')}[/cyan]")
+    console.print(f"  Email: {user.get('email', 'N/A')}")
+    console.print(f"  User ID: {user.get('id', 'N/A')}")
+    
+    # Credit card info
+    card = data.get("credit_card")
+    if card:
+        console.print("\n[bold]💳 Credit Card[/bold]")
+        console.print(f"  Card: [yellow]{card.get('card_name', '')}[/yellow] (****{card.get('last_four', '')})")
+        console.print(f"  Card ID: {card.get('id', '')}")
+        
+        txn = data.get("credit_card_transaction")
+        if txn:
+            console.print("\n[bold]📝 Card Transaction[/bold]")
+            console.print(f"  Transaction ID: {txn.get('id', '')}")
+            console.print(f"  Type: {txn.get('transaction_type', '')}")
+            console.print(f"  Amount: ${txn.get('amount', 0):,.2f}")
+            console.print(f"  Balance After: ${txn.get('balance_after', 0):,.2f}")
+            console.print(f"  Date: {txn.get('date', '')}")
+    
+    # Savings account info
+    account = data.get("savings_account")
+    if account:
+        console.print("\n[bold]🏦 Savings Account[/bold]")
+        console.print(f"  Account: [blue]{account.get('account_name', '')}[/blue] ({account.get('bank_name', '')})")
+        console.print(f"  Last Four: ****{account.get('last_four', '')}")
+        console.print(f"  Account ID: {account.get('id', '')}")
+        
+        txn = data.get("savings_transaction")
+        if txn:
+            console.print("\n[bold]📝 Savings Transaction[/bold]")
+            console.print(f"  Transaction ID: {txn.get('id', '')}")
+            console.print(f"  Type: {txn.get('transaction_type', '')}")
+            console.print(f"  Amount: ${txn.get('amount', 0):,.2f}")
+            console.print(f"  Balance After: ${txn.get('balance_after', 0):,.2f}")
+            console.print(f"  Date: {txn.get('date', '')}")
+
 
 def display_payment_summary(summary: List[Dict[str, Any]]) -> None:
     """Display payment method summary."""
@@ -1098,44 +1188,119 @@ def display_assets_summary(summary: Dict[str, Any]) -> None:
         
         console.print(table)
 
-def display_asset_depreciation(depreciation: Dict[str, Any]) -> None:
-    """Display asset depreciation analysis."""
-    if "message" in depreciation:
-        console.print(f"[yellow]{depreciation['message']}[/yellow]")
+def display_asset_depreciation(data: Dict[str, Any]) -> None:
+    """Display asset depreciation/appreciation analysis - calculations done in frontend."""
+    if "message" in data and not data.get("assets"):
+        console.print(f"[yellow]{data['message']}[/yellow]")
         return
     
     console.print(Panel.fit(
-        "[bold]Asset Depreciation Analysis[/bold]",
-        border_style="red"
+        "[bold]Asset Value Analysis[/bold]",
+        border_style="blue"
     ))
     
-    console.print(f"\n[bold]Total Assets:[/bold] {depreciation.get('total_assets', 0)}")
-    console.print(f"[bold]Total Depreciation:[/bold] [red]${depreciation.get('total_depreciation', 0):,.2f}[/red]")
+    assets = data.get("assets", [])
+    if not assets:
+        console.print("[yellow]No assets found[/yellow]")
+        return
     
-    assets = depreciation.get("assets", [])
-    if assets:
-        console.print("\n[bold]Depreciation by Asset:[/bold]")
-        table = Table(box=box.ROUNDED)
-        table.add_column("Asset", style="cyan")
-        table.add_column("Type", style="magenta")
-        table.add_column("Age (years)", style="blue", justify="right")
-        table.add_column("Purchase", style="green", justify="right")
-        table.add_column("Current", style="yellow", justify="right")
-        table.add_column("Depreciation", style="red", justify="right")
-        table.add_column("Annual", style="dim", justify="right")
+    # Calculate depreciation/appreciation for each asset
+    total_depreciation = 0.0
+    total_appreciation = 0.0
+    analyzed_assets = []
+    
+    for asset in assets:
+        purchase = asset.get("purchase_value", 0)
+        current = asset.get("current_value", 0)
+        change = current - purchase  # Positive = appreciation, negative = depreciation
+        change_pct = (change / purchase * 100) if purchase > 0 else 0
         
-        for asset in assets:
-            table.add_row(
-                asset.get("name", ""),
-                asset.get("type", ""),
-                f"{asset.get('age_years', 0):.1f}",
-                f"${asset.get('purchase_value', 0):,.2f}",
-                f"${asset.get('current_value', 0):,.2f}",
-                f"${asset.get('depreciation', 0):,.2f} ({asset.get('depreciation_percentage', 0):.1f}%)",
-                f"${asset.get('annual_depreciation', 0):,.2f}/yr"
-            )
+        # Calculate age in years from purchase_date
+        purchase_date = asset.get("purchase_date", "")
+        age_years = 0.0
+        if purchase_date:
+            from datetime import datetime
+            try:
+                pdate = datetime.strptime(purchase_date, "%Y-%m-%d")
+                age_years = (datetime.now() - pdate).days / 365.25
+            except:
+                pass
         
-        console.print(table)
+        annual_change = change / age_years if age_years > 0 else 0
+        
+        if change < 0:
+            total_depreciation += abs(change)
+            status = "depreciated"
+        elif change > 0:
+            total_appreciation += change
+            status = "appreciated"
+        else:
+            status = "stable"
+        
+        analyzed_assets.append({
+            "name": asset.get("name", ""),
+            "asset_type": asset.get("asset_type", ""),
+            "purchase_value": purchase,
+            "current_value": current,
+            "change": change,
+            "change_pct": change_pct,
+            "age_years": age_years,
+            "annual_change": annual_change,
+            "status": status,
+        })
+    
+    # Sort by change percentage (most depreciated first)
+    analyzed_assets.sort(key=lambda x: x["change_pct"])
+    
+    # Display summary
+    net_change = total_appreciation - total_depreciation
+    console.print(f"\n[bold]Total Assets:[/bold] {len(assets)}")
+    console.print(f"[bold]Total Appreciation:[/bold] [green]+${total_appreciation:,.2f}[/green]")
+    console.print(f"[bold]Total Depreciation:[/bold] [red]-${total_depreciation:,.2f}[/red]")
+    net_color = "green" if net_change >= 0 else "red"
+    net_sign = "+" if net_change >= 0 else ""
+    console.print(f"[bold]Net Change:[/bold] [{net_color}]{net_sign}${net_change:,.2f}[/{net_color}]")
+    
+    # Display table
+    console.print("\n[bold]Asset Details:[/bold]")
+    table = Table(box=box.ROUNDED)
+    table.add_column("Asset", style="cyan")
+    table.add_column("Type", style="magenta")
+    table.add_column("Age", style="blue", justify="right")
+    table.add_column("Purchase", style="dim", justify="right")
+    table.add_column("Current", style="yellow", justify="right")
+    table.add_column("Change", justify="right")
+    table.add_column("Annual", style="dim", justify="right")
+    
+    for a in analyzed_assets:
+        change = a["change"]
+        change_pct = a["change_pct"]
+        if change > 0:
+            change_str = f"[green]+${change:,.2f} (+{change_pct:.1f}%)[/green]"
+        elif change < 0:
+            change_str = f"[red]-${abs(change):,.2f} ({change_pct:.1f}%)[/red]"
+        else:
+            change_str = "$0.00 (0.0%)"
+        
+        annual = a["annual_change"]
+        if annual > 0:
+            annual_str = f"[green]+${annual:,.0f}/yr[/green]"
+        elif annual < 0:
+            annual_str = f"[red]-${abs(annual):,.0f}/yr[/red]"
+        else:
+            annual_str = "$0/yr"
+        
+        table.add_row(
+            a["name"],
+            a["asset_type"],
+            f"{a['age_years']:.1f}yr",
+            f"${a['purchase_value']:,.2f}",
+            f"${a['current_value']:,.2f}",
+            change_str,
+            annual_str,
+        )
+    
+    console.print(table)
 
 def display_recurring_templates(templates: List[Dict[str, Any]]) -> None:
     """Display recurring expense templates."""
@@ -1270,6 +1435,233 @@ def display_upcoming_recurring(upcoming: Dict[str, Any]) -> None:
     # Calculate total
     total_upcoming = sum(e.get("amount", 0) for e in expenses)
     console.print(f"\n[bold]Total Amount:[/bold] [yellow]${total_upcoming:,.2f}[/yellow]")
+    
+def display_savings_accounts(accounts: List[Dict[str, Any]]) -> None:
+    """Display savings accounts."""
+    if not accounts:
+        console.print("[yellow]No savings accounts found[/yellow]")
+        return
+    
+    table = Table(title="🏦 Savings Accounts", box=box.ROUNDED)
+    table.add_column("ID", style="cyan", justify="right")
+    table.add_column("Account Name", style="green")
+    table.add_column("Bank", style="blue")
+    table.add_column("Type", style="magenta")
+    table.add_column("Balance", style="yellow", justify="right")
+    table.add_column("Min Balance", style="dim", justify="right")
+    table.add_column("Interest", style="cyan", justify="right")
+    
+    for account in accounts:
+        balance = account.get("current_balance", 0)
+        min_balance = account.get("minimum_balance", 0)
+        
+        # Color code balance
+        if balance < 0:
+            balance_str = f"[red]${balance:,.2f}[/red]"
+        elif balance < min_balance:
+            balance_str = f"[yellow]${balance:,.2f}[/yellow]"
+        else:
+            balance_str = f"${balance:,.2f}"
+        
+        table.add_row(
+            str(account.get("id", "")),
+            account.get("account_name", ""),
+            account.get("bank_name", ""),
+            account.get("account_type", ""),
+            balance_str,
+            f"${min_balance:,.2f}",
+            f"{account.get('interest_rate', 0):.2f}%"
+        )
+    
+    console.print(table)
+
+def display_savings_account_summary(summary: Dict[str, Any]) -> None:
+    """Display savings account summary with alerts."""
+    console.print(Panel.fit(
+        f"[bold]Account Summary: {summary.get('account_name', '')}[/bold]",
+        border_style="green"
+    ))
+    
+    balance = summary.get("current_balance", 0)
+    min_balance = summary.get("minimum_balance", 0)
+    
+    console.print(f"\n[bold]Account Details:[/bold]")
+    console.print(f"  Bank: [blue]{summary.get('bank_name', '')}[/blue]")
+    console.print(f"  Type: [magenta]{summary.get('account_type', '')}[/magenta]")
+    console.print(f"  Current Balance: [green]${balance:,.2f}[/green]")
+    console.print(f"  Minimum Balance: [cyan]${min_balance:,.2f}[/cyan]")
+    console.print(f"  Interest Rate: [yellow]{summary.get('interest_rate', 0):.2f}%[/yellow]")
+    
+    console.print(f"\n[bold]Transaction Summary:[/bold]")
+    console.print(f"  Total Deposits: [green]${summary.get('total_deposits', 0):,.2f}[/green]")
+    console.print(f"  Total Withdrawals: [red]${summary.get('total_withdrawals', 0):,.2f}[/red]")
+    console.print(f"  Interest Earned: [yellow]${summary.get('total_interest_earned', 0):,.2f}[/yellow]")
+    console.print(f"  Transactions: [cyan]{summary.get('transaction_count', 0)}[/cyan]")
+    
+    projected = summary.get("projected_interest", {})
+    console.print(f"\n[bold]Projected Interest:[/bold]")
+    console.print(f"  Annual: [green]${projected.get('annual', 0):,.2f}[/green]")
+    console.print(f"  Monthly: [yellow]${projected.get('monthly', 0):,.2f}[/yellow]")
+    
+    alerts = summary.get("alerts", [])
+    if alerts:
+        console.print(f"\n[bold red]⚠️  Alerts:[/bold red]")
+        for alert in alerts:
+            severity = alert.get("severity", "")
+            message = alert.get("message", "")
+            if severity == "critical":
+                console.print(f"  🚨 [red]{message}[/red]")
+            elif severity == "warning":
+                console.print(f"  ⚠️  [yellow]{message}[/yellow]")
+
+def display_savings_account_transactions(data: Dict[str, Any]) -> None:
+    """Display savings account transaction history."""
+    console.print(Panel.fit(
+        f"[bold]Transaction History: {data.get('account_name', '')}[/bold]",
+        border_style="blue"
+    ))
+    
+    console.print(f"\n[bold]Current Balance:[/bold] [green]${data.get('current_balance', 0):,.2f}[/green]")
+    console.print(f"[bold]Total Transactions:[/bold] {data.get('transaction_count', 0)}")
+    console.print(f"[bold]Total Deposits:[/bold] [green]${data.get('total_deposits', 0):,.2f}[/green]")
+    console.print(f"[bold]Total Withdrawals:[/bold] [red]${data.get('total_withdrawals', 0):,.2f}[/red]")
+    
+    transactions = data.get("transactions", [])
+    if not transactions:
+        console.print("\n[yellow]No transactions found[/yellow]")
+        return
+    
+    console.print(f"\n[bold]Transactions:[/bold]")
+    table = Table(box=box.ROUNDED)
+    table.add_column("Date", style="blue")
+    table.add_column("Type", style="magenta")
+    table.add_column("Amount", style="yellow", justify="right")
+    table.add_column("Balance After", style="green", justify="right")
+    table.add_column("Description", style="white")
+    
+    for txn in transactions:
+        txn_type = txn.get("type", "")
+        amount = txn.get("amount", 0)
+        
+        # Color code by type
+        if txn_type == "deposit" or txn_type == "interest":
+            type_str = f"[green]{txn_type}[/green]"
+            amount_str = f"[green]+${amount:,.2f}[/green]"
+        else:
+            type_str = f"[red]{txn_type}[/red]"
+            amount_str = f"[red]-${amount:,.2f}[/red]"
+        
+        table.add_row(
+            txn.get("date", ""),
+            type_str,
+            amount_str,
+            f"${txn.get('balance_after', 0):,.2f}",
+            (txn.get("description", "") or "")[:40]
+        )
+    
+    console.print(table)
+
+def display_all_savings_accounts_summary(summary: Dict[str, Any]) -> None:
+    """Display summary of all savings accounts."""
+    if "message" in summary:
+        console.print(f"[yellow]{summary['message']}[/yellow]")
+        return
+    
+    console.print(Panel.fit(
+        "[bold]All Savings Accounts Summary[/bold]",
+        border_style="green"
+    ))
+    
+    total_balance = summary.get("total_balance", 0)
+    accounts_with_alerts = summary.get("accounts_with_alerts", 0)
+    negative_accounts = summary.get("negative_accounts", 0)
+    
+    console.print(f"\n[bold]Overview:[/bold]")
+    console.print(f"  Total Accounts: [cyan]{summary.get('total_accounts', 0)}[/cyan]")
+    console.print(f"  Total Balance: [green]${total_balance:,.2f}[/green]")
+    console.print(f"  Accounts with Alerts: [yellow]{accounts_with_alerts}[/yellow]")
+    console.print(f"  Negative Balance Accounts: [red]{negative_accounts}[/red]")
+    
+    accounts = summary.get("accounts", [])
+    if not accounts:
+        return
+    
+    console.print(f"\n[bold]Accounts:[/bold]")
+    table = Table(box=box.ROUNDED)
+    table.add_column("Account", style="cyan")
+    table.add_column("Bank", style="blue")
+    table.add_column("Balance", style="green", justify="right")
+    table.add_column("Min Balance", style="dim", justify="right")
+    table.add_column("Transactions", style="yellow", justify="right")
+    table.add_column("Alerts", style="red")
+    
+    for account in accounts:
+        balance = account.get("current_balance", 0)
+        alerts = account.get("alerts", [])
+        
+        if balance < 0:
+            balance_str = f"[red]${balance:,.2f}[/red]"
+        elif "low_balance" in alerts:
+            balance_str = f"[yellow]${balance:,.2f}[/yellow]"
+        else:
+            balance_str = f"${balance:,.2f}"
+        
+        alert_str = ""
+        if "negative_balance" in alerts:
+            alert_str = "🚨 Negative"
+        elif "low_balance" in alerts:
+            alert_str = "⚠️  Low"
+        else:
+            alert_str = "✅ OK"
+        
+        table.add_row(
+            account.get("account_name", ""),
+            account.get("bank_name", ""),
+            balance_str,
+            f"${account.get('minimum_balance', 0):,.2f}",
+            str(account.get("transaction_count", 0)),
+            alert_str
+        )
+    
+    console.print(table)
+
+# Update display_dashboard to include savings accounts
+def display_dashboard(dashboard: Dict[str, Any]) -> None:
+    # ... existing dashboard code ...
+    
+    # Add after credit cards section:
+    savings = dashboard.get("savings_accounts", {})
+    total_savings = savings.get("total_balance", 0)
+    alerts_count = savings.get("accounts_with_alerts", 0)
+    
+    if total_savings > 0:
+        console.print(f"\n[bold]🏦 Savings Accounts[/bold]")
+        console.print(f"  Total Balance: [green]${total_savings:,.2f}[/green]")
+        
+        if alerts_count > 0:
+            console.print(f"  Accounts with Alerts: [red]{alerts_count}[/red]")
+            
+            accounts = savings.get("accounts", [])
+            if accounts:
+                console.print("\n[bold]Account Status:[/bold]")
+                table = Table(box=box.SIMPLE)
+                table.add_column("Account", style="cyan")
+                table.add_column("Balance", style="yellow", justify="right")
+                table.add_column("Status", style="red")
+                
+                for account in accounts[:3]:  # Show top 3
+                    alerts = account.get("alerts", [])
+                    if alerts:
+                        status = "🚨" if "negative_balance" in alerts else "⚠️"
+                        table.add_row(
+                            account.get("account_name", ""),
+                            f"${account.get('current_balance', 0):,.2f}",
+                            status
+                        )
+                
+                console.print(table)
+        else:
+            console.print("  [green]✓ All accounts OK[/green]")
 
 def main():
     """Main entry point for display module."""
@@ -1290,8 +1682,10 @@ def main():
     display_functions = {
         "users": display_users,
         "expenses": display_expenses,
+        "expense_details": display_expense_details,
         "budgets": display_budgets,
         "credit_cards": display_credit_cards,
+        "debit_cards": display_debit_cards,
         "budget_status": display_budget_status,
         "monthly_report": display_monthly_report,
         "user_stats": display_user_stats,
@@ -1314,6 +1708,10 @@ def main():
         "asset_depreciation": display_asset_depreciation,
         "recurring_templates": display_recurring_templates,      # Add this line
         "upcoming_recurring": display_upcoming_recurring,        # Add this line
+        "savings_accounts": display_savings_accounts,
+        "savings_account_summary": display_savings_account_summary,
+        "savings_account_transactions": display_savings_account_transactions,
+        "all_savings_accounts_summary": display_all_savings_accounts_summary,
     }
     
     if display_type in display_functions:
