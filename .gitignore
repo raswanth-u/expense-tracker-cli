@@ -24,3 +24,26 @@ config/config.toml
 
 # OS
 .DS_Store
+
+# ========== SECRETS & ENVIRONMENT (NEVER COMMIT) ==========
+# Environment variable files with actual secrets
+.env
+.env.local
+.env.*.local
+.env.dev
+.env.prod
+.env.production
+.env.staging
+.env.test
+
+# Config files with secrets (only .example should be committed)
+config/config.toml
+!config/config_dev.toml.example
+!config/config_prod.toml.example
+!config/config.toml.example
+
+# Temporary files
+*.tmp
+*.log
+*.pem
+*.key

@@ -18,7 +18,7 @@ pub struct Config {
 #[derive(Debug, Deserialize, Clone)]
 pub struct ApiConfig {
     pub base_url: String,
-    pub api_key: Option<String>,
+    pub api_key: String,
     pub skip_ssl_verify: bool,
 }
 
@@ -73,39 +73,6 @@ impl Config {
         
         let mut config: Config = toml::from_str(&content)
             .context("Failed to parse config file")?;
-        
-        // Set api_key from environment variables (secrets management)
-        // Environment variables take precedence over TOML values
-        let api_key_env = match env {
-            Environment::Dev => std::env::var("API_KEY_DEV").ok(),
-            Environment::Prod => std::env::var("API_KEY_PROD").ok(),
-        };
-        
-        if let Some(api_key) = api_key_env {
-            config.api.api_key = Some(api_key);
-            eprintln!("🔑 API key loaded from environment variable");
-        } else if config.api.api_key.is_none() {
-            eprintln!("⚠️  No API key found in environment variables or config file!");
-            eprintln!("📝 Set environment variable:");
-            match env {
-                Environment::Dev => eprintln!("  export API_KEY_DEV=your-dev-api-key"),
-                Environment::Prod => eprintln!("  export API_KEY_PROD=your-prod-api-key"),
-            }
-            eprintln!("💡 Or source your .env file: source .env.{}", env_name);
-        }
-        
-        // Override skip_ssl_verify from environment if set
-        let ssl_env = match env {
-            Environment::Dev => std::env::var("SKIP_SSL_VERIFY_DEV").ok(),
-            Environment::Prod => std::env::var("SKIP_SSL_VERIFY_PROD").ok(),
-        };
-        
-        if let Some(ssl_str) = ssl_env {
-            if let Ok(ssl_bool) = ssl_str.parse::<bool>() {
-                config.api.skip_ssl_verify = ssl_bool;
-                eprintln!("🔒 SSL verification override: {}", if ssl_bool { "disabled" } else { "enabled" });
-            }
-        }
         
         config.environment = Some(env);
         Ok(config)

@@ -11,11 +11,15 @@ from typing import Any
 
 # Configuration
 CLI_PATH = "/home/life/projects/expense_tracker_app/expense-cli/target/release/expense-cli"
-API_URL = "https://localhost/api"
+API_URL = "https://localhost:8443/api"
 API_KEY = "supersecretapikey"
 
 # Disable SSL warnings for self-signed cert
 requests.packages.urllib3.disable_warnings()
+
+# Set environment variable for CLI to use
+import os
+os.environ["API_KEY_DEV"] = API_KEY
 
 
 def run_cli(*args, expect_success=True) -> dict:
@@ -23,7 +27,9 @@ def run_cli(*args, expect_success=True) -> dict:
     cmd = [CLI_PATH, "--json"] + list(args)
     # Run from the CLI directory so config file is found
     cli_dir = "/home/life/projects/expense_tracker_app/expense-cli"
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=cli_dir)
+    # Pass the environment including API_KEY_DEV
+    env = os.environ.copy()
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=cli_dir, env=env)
     
     if expect_success and result.returncode != 0:
         raise AssertionError(f"CLI failed: {result.stderr}\nstdout: {result.stdout}")
@@ -42,7 +48,9 @@ def run_cli_display(*args) -> tuple[int, str, str]:
     cmd = [CLI_PATH] + list(args)
     # Run from the CLI directory so config file is found
     cli_dir = "/home/life/projects/expense_tracker_app/expense-cli"
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=cli_dir)
+    # Pass the environment including API_KEY_DEV
+    env = os.environ.copy()
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=cli_dir, env=env)
     return result.returncode, result.stdout, result.stderr
 
 

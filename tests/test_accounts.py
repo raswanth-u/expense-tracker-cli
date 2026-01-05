@@ -235,3 +235,45 @@ class TestAccountDisplay:
         returncode, stdout, stderr = run_cli_display("account", "view", str(test_account["id"]))
         
         assert returncode == 0
+
+
+class TestAccountSummary:
+    """Test account summary functionality."""
+
+    def test_all_accounts_summary(self, test_user, test_account):
+        """Test getting summary of all accounts."""
+        # Create another account
+        run_cli(
+            "account", "add",
+            "--user-id", str(test_user["id"]),
+            "--name", "Second Account",
+            "--bank", "Another Bank",
+            "--last-four", "5678",
+            "--balance", "1000.00"
+        )
+
+        result = run_cli("account", "summary")
+        assert result["success"] is True
+
+    def test_account_with_transactions_summary(self, test_user):
+        """Test account summary with transactions."""
+        # Create account
+        add_result = run_cli(
+            "account", "add",
+            "--user-id", str(test_user["id"]),
+            "--name", "Transaction Account",
+            "--bank", "Test Bank",
+            "--last-four", "9012",
+            "--balance", "500.00"
+        )
+        account_id = add_result["account"]["id"]
+
+        # Add deposit
+        run_cli("account", "deposit", str(account_id), "--amount", "200.00", "--description", "Deposit")
+
+        # Add withdrawal
+        run_cli("account", "withdraw", str(account_id), "--amount", "50.00", "--description", "Withdrawal")
+
+        # Get summary
+        result = run_cli("account", "summary")
+        assert result["success"] is True

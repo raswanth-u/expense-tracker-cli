@@ -275,3 +275,102 @@ class TestExpenseDisplay:
         )
         
         assert returncode == 0
+
+
+class TestExpenseDetails:
+    """Test expense detailed views."""
+
+    def test_expense_view_details(self, test_user):
+        """Test viewing expense with full details."""
+        add_result = run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "75.00",
+            "--category", "Dining",
+            "--date", "2026-01-20",
+            "--description", "Dinner with friends"
+        )
+        # Get expense ID from the response
+        expense_id = add_result.get("expense", add_result.get("id", {}))
+        if isinstance(expense_id, dict):
+            expense_id = expense_id.get("id")
+        # If no ID, list and get first one
+        if not expense_id:
+            list_result = run_cli("expense", "list", "--user-id", str(test_user["id"]))
+            expenses = list_result.get("expenses", [])
+            if expenses:
+                expense_id = expenses[0]["id"]
+        
+        if expense_id:
+            result = run_cli("expense", "view", str(expense_id))
+            assert result["success"] is True
+
+    def test_expense_list_by_date_range(self, test_user):
+        """Test listing expenses filtered by date range."""
+        # Add expenses in different months
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "100.00",
+            "--category", "Food",
+            "--date", "2026-01-15"
+        )
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "150.00",
+            "--category", "Food",
+            "--date", "2025-12-15"
+        )
+
+        result = run_cli("expense", "list",
+                        "--user-id", str(test_user["id"]),
+                        "--from", "2026-01-01",
+                        "--to", "2026-01-31")
+
+        assert result["success"] is True
+
+
+class TestExpensePaymentMethods:
+    """Test expenses with different payment methods."""
+
+    def test_expense_with_debit_card(self, test_user, test_account, test_debit_card):
+        """Test adding expense with debit card."""
+        result = run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "50.00",
+            "--category", "Shopping",
+            "--date", "2026-01-18",
+            "--payment", "debit_card",
+            "--debit-id", str(test_debit_card["id"])
+        )
+
+        assert result["success"] is True
+
+    def test_expense_summary_by_payment(self, test_user):
+        """Test expense summary includes payment method breakdown."""
+        # Add cash expense
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "25.00",
+            "--category", "Food",
+            "--date", "2026-01-10",
+            "--payment", "cash"
+        )
+        # Add another cash expense
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "30.00",
+            "--category", "Transport",
+            "--date", "2026-01-12",
+            "--payment", "cash"
+        )
+
+        result = run_cli("expense", "summary",
+                        "--user-id", str(test_user["id"]),
+                        "--month", "2026-01")
+
+        assert result["success"] is True

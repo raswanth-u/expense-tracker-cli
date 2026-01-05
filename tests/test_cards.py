@@ -224,3 +224,86 @@ class TestCardDisplay:
         )
         
         assert returncode == 0
+
+
+class TestCardSummary:
+    """Test credit card summary functionality."""
+
+    def test_cards_utilization(self, test_credit_card):
+        """Test getting utilization of all credit cards."""
+        result = run_cli("card", "utilization", "--months", "1")
+
+        assert result["success"] is True
+
+    def test_card_with_expense_utilization(self, test_user, test_credit_card):
+        """Test card utilization after expense."""
+        # Add expense to credit card
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "500.00",
+            "--category", "Shopping",
+            "--date", "2026-01-15",
+            "--payment", "credit_card",
+            "--card-id", str(test_credit_card["id"])
+        )
+
+        # Check utilization for all cards
+        result = run_cli("card", "utilization", "--months", "1")
+
+        assert result["success"] is True
+
+    def test_card_statement_december(self, test_user, test_credit_card):
+        """Test card statement for December (edge case)."""
+        result = run_cli("card", "statement", str(test_credit_card["id"]), "--month", "2025-12")
+
+        assert result["success"] is True
+
+
+class TestCardWithExpenses:
+    """Test credit card operations with expenses."""
+
+    def test_card_view_with_utilization(self, test_user, test_credit_card):
+        """Test viewing a card shows utilization details."""
+        # Add expense to credit card
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "1000.00",
+            "--category", "Shopping",
+            "--date", "2026-01-15",
+            "--payment", "credit_card",
+            "--card-id", str(test_credit_card["id"])
+        )
+
+        # View the card (should show utilization)
+        result = run_cli("card", "view", str(test_credit_card["id"]))
+        assert result["success"] is True
+        # Card view returns 'card' key, not 'credit_card'
+        assert "card" in result or "statistics" in result
+
+    def test_card_transactions_list(self, test_user, test_credit_card):
+        """Test listing transactions for a specific card."""
+        # Add expenses
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "100.00",
+            "--category", "Food",
+            "--date", "2026-01-10",
+            "--payment", "credit_card",
+            "--card-id", str(test_credit_card["id"])
+        )
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "200.00",
+            "--category", "Entertainment",
+            "--date", "2026-01-12",
+            "--payment", "credit_card",
+            "--card-id", str(test_credit_card["id"])
+        )
+
+        # Get transactions
+        result = run_cli("card", "transactions", str(test_credit_card["id"]))
+        assert result["success"] is True

@@ -3,7 +3,17 @@
 //! Provides a non-interactive CLI with subcommands for all operations.
 //! Use --interactive for menu-driven mode.
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
+
+/// Environment to connect to
+#[derive(Debug, Clone, Copy, ValueEnum, Default)]
+pub enum Environment {
+    /// Development environment (localhost:8443)
+    #[default]
+    Dev,
+    /// Production environment (localhost:443)
+    Prod,
+}
 
 #[derive(Parser)]
 #[command(name = "expense")]
@@ -18,6 +28,10 @@ pub struct Cli {
     /// Run in interactive mode with menus
     #[arg(short, long)]
     pub interactive: bool,
+    
+    /// Environment to connect to (dev or prod)
+    #[arg(short, long, value_enum, default_value = "dev", global = true)]
+    pub env: Environment,
     
     #[command(subcommand)]
     pub command: Option<Commands>,

@@ -1,0 +1,35 @@
+# =============================================================================
+# DEVELOPMENT ENVIRONMENT CONFIGURATION
+# =============================================================================
+# 
+# This config connects to the DEVELOPMENT environment:
+#   - Runs on port 8443 (HTTPS)
+#   - Uses separate database (port 5433)
+#   - For testing new features before production
+#
+# Usage:
+#   expense --env dev user list
+#   expense -e dev expense add --amount 50 --category Food --user-id 1
+#   expense --env dev --interactive
+# =============================================================================
+
+[api]
+# Development API URL (uses port 8443 to avoid conflict with production)
+base_url = "https://localhost:8443/api"
+
+# Skip SSL verification (typically true for dev with self-signed certs)
+skip_ssl_verify = true
+
+[display]
+# Python interpreter path (leave empty to use system default)
+python_path = ""
+
+# Python display module path
+display_module = "./python_display/display.py"
+
+[defaults]
+# Default user ID for operations
+default_user_id = 1
+
+# Default date format
+date_format = "%Y-%m-%d"

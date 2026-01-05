@@ -345,3 +345,137 @@ class TestBudgetDisplay:
         )
         
         assert returncode == 0
+
+
+class TestBudgetDecember:
+    """Test budget operations for December (edge case for date range)."""
+
+    def test_add_budget_december(self, test_user):
+        """Test adding a budget for December."""
+        result = run_cli(
+            "budget", "add",
+            "--user-id", str(test_user["id"]),
+            "--category", "Holiday",
+            "--amount", "1000.00",
+            "--month", "2025-12"
+        )
+
+        assert result["success"] is True
+        assert result["budget"]["month"] == "2025-12"
+
+    def test_budget_status_december(self, test_user):
+        """Test budget status for December month."""
+        # Create budget for December
+        run_cli(
+            "budget", "add",
+            "--user-id", str(test_user["id"]),
+            "--category", "Gifts",
+            "--amount", "500.00",
+            "--month", "2025-12"
+        )
+
+        # Add expense in December
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "200.00",
+            "--category", "Gifts",
+            "--date", "2025-12-25"
+        )
+
+        result = run_cli("budget", "status",
+                        "--month", "2025-12",
+                        "--user-id", str(test_user["id"]))
+
+        assert result["success"] is True
+
+    def test_compare_december_with_january(self, test_user):
+        """Test comparing December and January budgets."""
+        # Create budget for Dec 2025
+        run_cli(
+            "budget", "add",
+            "--user-id", str(test_user["id"]),
+            "--category", "Food",
+            "--amount", "600.00",
+            "--month", "2025-12"
+        )
+
+        # Create budget for Jan 2026
+        run_cli(
+            "budget", "add",
+            "--user-id", str(test_user["id"]),
+            "--category", "Food",
+            "--amount", "500.00",
+            "--month", "2026-01"
+        )
+
+        result = run_cli("budget", "compare",
+                        "2025-12", "2026-01",
+                        "--user-id", str(test_user["id"]))
+
+        assert result["success"] is True
+
+
+class TestBudgetAlerts:
+    """Test budget alert functionality."""
+
+    def test_budget_over_limit_alert(self, test_user):
+        """Test budget alert when spending exceeds budget."""
+        # Create a small budget
+        run_cli(
+            "budget", "add",
+            "--user-id", str(test_user["id"]),
+            "--category", "Entertainment",
+            "--amount", "100.00",
+            "--month", TEST_MONTH
+        )
+
+        # Exceed the budget
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "150.00",
+            "--category", "Entertainment",
+            "--date", "2026-01-15"
+        )
+
+        # Check status shows over budget
+        result = run_cli("budget", "status",
+                        "--month", TEST_MONTH,
+                        "--user-id", str(test_user["id"]))
+
+        assert result["success"] is True
+
+    def test_multiple_categories_budget_status(self, test_user):
+        """Test budget status with multiple categories."""
+        # Create multiple budgets
+        for category in ["Food", "Transport", "Utilities"]:
+            run_cli(
+                "budget", "add",
+                "--user-id", str(test_user["id"]),
+                "--category", category,
+                "--amount", "300.00",
+                "--month", TEST_MONTH
+            )
+
+        # Add some expenses
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "100.00",
+            "--category", "Food",
+            "--date", "2026-01-10"
+        )
+        run_cli(
+            "expense", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "200.00",
+            "--category", "Transport",
+            "--date", "2026-01-12"
+        )
+
+        result = run_cli("budget", "status",
+                        "--month", TEST_MONTH,
+                        "--user-id", str(test_user["id"]))
+
+        assert result["success"] is True

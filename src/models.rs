@@ -30,6 +30,7 @@ pub struct Expense {
     pub is_recurring: Option<bool>,
     pub tags: Option<String>,
     pub savings_account_id: Option<i32>,
+    pub created_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,6 +57,7 @@ pub struct Budget {
     pub period: Option<String>,
     pub is_active: Option<bool>,
     pub tags: Option<String>,
+    pub created_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -78,6 +80,7 @@ pub struct CreditCard {
     pub billing_day: i32,
     pub tags: Option<String>,
     pub is_active: Option<bool>,
+    pub created_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

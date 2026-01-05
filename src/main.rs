@@ -38,7 +38,7 @@ use display::Display;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let config = Config::load()?;
+    let config = Config::load_for_env(cli.env)?;
     let api = ApiClient::new(&config)?;
     let display = Display::new(&config);
     let json_output = cli.json;

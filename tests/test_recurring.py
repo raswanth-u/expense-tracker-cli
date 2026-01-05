@@ -386,3 +386,89 @@ class TestRecurringDisplay:
         returncode, stdout, stderr = run_cli_display("recurring", "upcoming", "--days", "30")
         
         assert returncode == 0
+
+
+class TestRecurringFrequencies:
+    """Test various recurring expense frequencies."""
+
+    def test_add_recurring_daily(self, test_user):
+        """Test adding a daily recurring expense."""
+        result = run_cli(
+            "recurring", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "5.00",
+            "--category", "Coffee",
+            "--frequency", "daily",
+            "--start-date", "2026-01-01",
+            "--interval", "1"
+        )
+
+        assert result["success"] is True
+        assert result["template"]["frequency"] == "daily"
+
+    def test_add_recurring_yearly(self, test_user):
+        """Test adding a yearly recurring expense."""
+        result = run_cli(
+            "recurring", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "1200.00",
+            "--category", "Insurance",
+            "--frequency", "yearly",
+            "--start-date", "2026-01-15",
+            "--day-of-month", "15",
+            "--interval", "1"
+        )
+
+        assert result["success"] is True
+        assert result["template"]["frequency"] == "yearly"
+
+    def test_add_recurring_custom(self, test_user):
+        """Test adding a custom frequency recurring expense."""
+        result = run_cli(
+            "recurring", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "30.00",
+            "--category", "Gym",
+            "--frequency", "custom",
+            "--start-date", "2026-01-01",
+            "--interval", "10"  # Every 10 days
+        )
+
+        assert result["success"] is True
+        assert result["template"]["frequency"] == "custom"
+
+    def test_process_daily_recurring(self, test_user):
+        """Test processing pending recurring expenses (includes daily frequency)."""
+        # Add a daily recurring expense
+        add_result = run_cli(
+            "recurring", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "5.00",
+            "--category", "Daily Coffee",
+            "--frequency", "daily",
+            "--start-date", "2026-01-01",
+            "--interval", "1"
+        )
+        assert add_result["success"] is True
+
+        # Process all pending recurring expenses
+        result = run_cli("recurring", "process")
+        assert result["success"] is True
+
+    def test_process_yearly_recurring(self, test_user):
+        """Test processing pending recurring expenses (includes yearly frequency)."""
+        add_result = run_cli(
+            "recurring", "add",
+            "--user-id", str(test_user["id"]),
+            "--amount", "500.00",
+            "--category", "Annual Fee",
+            "--frequency", "yearly",
+            "--start-date", "2026-01-01",
+            "--day-of-month", "1"
+        )
+        assert add_result["success"] is True
+
+        # Process all pending recurring expenses
+        result = run_cli("recurring", "process")
+        assert result["success"] is True
+

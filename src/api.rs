@@ -29,7 +29,10 @@ impl ApiClient {
         Ok(Self {
             client,
             base_url: config.api.base_url.clone(),
-            api_key: config.api.api_key.clone(),
+            api_key: config.api.api_key.clone().unwrap_or_else(|| {
+                eprintln!("❌ API key not configured!");
+                std::process::exit(1);
+            }),
         })
     }
     
