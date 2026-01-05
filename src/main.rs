@@ -1,144 +1,75 @@
+//! # Family Expense Tracker CLI
+//!
+//! A command-line interface for managing family expenses.
+//!
+//! ## Usage
+//! ```
+//! expense expense add --amount 50 --category Food --user-id 1
+//! expense expense list --user-id 1 --category Food
+//! expense expense view 1
+//! expense user list
+//! expense budget status --month 2026-01
+//! expense report monthly --month 2026-01
+//! expense dashboard
+//! ```
+//! 
+//! ## Interactive Mode
+//! ```
+//! expense --interactive
+//! ```
+
 mod api;
+mod cli;
 mod commands;
 mod config;
 mod constants;
 mod display;
+mod interactive;
 mod models;
 mod ui;
 
 use anyhow::Result;
 use clap::Parser;
+
 use api::ApiClient;
+use cli::*;
 use config::Config;
 use display::Display;
-use ui::*;
-
-#[derive(Parser)]
-#[command(name = "expense")]
-#[command(version = "2.0.0")]
-#[command(about = "Family Expense Tracker CLI", long_about = None)]
-struct Cli {
-    /// Quick action: 'q' for quick expense, 't' for today, 'm' for month
-    #[arg(short, long)]
-    quick: Option<String>,
-}
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let config = Config::load()?;
+    let config = Config::load_for_env(cli.env)?;
     let api = ApiClient::new(&config)?;
     let display = Display::new(&config);
+    let json_output = cli.json;
     
-    // Handle quick actions
-    if let Some(action) = cli.quick {
-        return handle_quick_action(&action, &api, &display, &config);
+    // Handle interactive mode
+    if cli.interactive {
+        return interactive::run_interactive(&api, &display, &config);
     }
     
-    // Main interactive loop
-    loop {
-        match show_main_menu()? {
-            MainMenuOption::Users => commands::handle_users(&api, &display, &config)?,
-            MainMenuOption::Expenses => commands::handle_expenses(&api, &display, &config)?,
-            MainMenuOption::Budgets => commands::handle_budgets(&api, &display, &config)?,
-            MainMenuOption::Cards => commands::handle_cards(&api, &display, &config)?,
-            MainMenuOption::Reports => commands::handle_reports(&api, &display, &config)?,
-            MainMenuOption::Settings => commands::handle_settings(&api, &display, &config)?,
-            MainMenuOption::Exit => {
-                println!("\n👋 Goodbye!");
-                break;
-            }
-        }
-    }
-    
-    Ok(())
-}
-
-fn handle_quick_action(
-    action: &str,
-    api: &ApiClient,
-    display: &Display,
-    config: &Config,
-) -> Result<()> {
-    match action.to_lowercase().as_str() {
-        "q" | "quick" => quick_expense(api, display, config)?,
-        "t" | "today" => today_summary(api, display)?,
-        "m" | "month" => month_summary(api, display)?,
-        _ => {
-            print_error(&format!("Unknown quick action: {}", action));
-            println!("Available quick actions:");
-            println!("  q, quick - Quick expense entry");
-            println!("  t, today - Today's summary");
-            println!("  m, month - This month's summary");
-        }
-    }
-    Ok(())
-}
-
-fn quick_expense(api: &ApiClient, display: &Display, config: &Config) -> Result<()> {
-    print_section_header("Quick Expense Entry");
-    
-    let amount = prompt_float("Amount", None)?;
-    let category = constants::CATEGORIES[0].to_string(); // Default to Food
-    let date = chrono::Local::now().format("%Y-%m-%d").to_string();
-    let payment_method = "cash".to_string();
-    let user_id = config.defaults.default_user_id as i32;
-    
-    print_info("Creating quick expense...");
-    
-    let expense_create = models::ExpenseCreate {
-        user_id,
-        amount,
-        category,
-        description: None,
-        date,
-        payment_method,
-        credit_card_id: None,
-        is_recurring: Some(false),
-        tags: None,
+    // If no command provided, show help
+    let Some(command) = cli.command else {
+        println!("Use --interactive for menu-driven mode, or provide a command.");
+        println!("Run 'expense --help' for usage information.");
+        return Ok(());
     };
-    
-    let expense = api.create_expense(&expense_create)?;
-    print_success(&format!("Quick expense created with ID: {}", expense.id.unwrap_or(0)));
-    display.show("expenses", &vec![expense])?;
-    
-    Ok(())
-}
 
-fn today_summary(api: &ApiClient, display: &Display) -> Result<()> {
-    print_section_header("Today's Summary");
-    
-    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-    
-    print_info("Fetching today's expenses...");
-    
-    let filters = models::ExpenseFilters {
-        from_date: Some(today.clone()),
-        to_date: Some(today),
-        ..Default::default()
-    };
-    
-    let expenses = api.list_expenses_filtered(&filters)?;
-    
-    if expenses.is_empty() {
-        print_info("No expenses found for today");
-    } else {
-        let total: f64 = expenses.iter().map(|e| e.amount).sum();
-        println!("\nTotal for today: ${:.2}", total);
-        println!("Transactions: {}\n", expenses.len());
-        display.show("expenses", &expenses)?;
+    match command {
+        Commands::Expense(cmd) => commands::handle_expense_command(&api, &display, cmd, json_output)?,
+        Commands::User(cmd) => commands::handle_user_command(&api, &display, cmd, json_output)?,
+        Commands::Budget(cmd) => commands::handle_budget_command(&api, &display, cmd, json_output)?,
+        Commands::Card(cmd) => commands::handle_card_command(&api, &display, cmd, json_output)?,
+        Commands::Debit(cmd) => commands::handle_debit_command(&api, &display, cmd, json_output)?,
+        Commands::Account(cmd) => commands::handle_account_command(&api, &display, cmd, json_output)?,
+        Commands::Goal(cmd) => commands::handle_goal_command(&api, &display, cmd, json_output)?,
+        Commands::Asset(cmd) => commands::handle_asset_command(&api, &display, cmd, json_output)?,
+        Commands::Recurring(cmd) => commands::handle_recurring_command(&api, &display, cmd, json_output)?,
+        Commands::Report(cmd) => commands::handle_report_command(&api, &display, cmd, json_output)?,
+        Commands::Search(args) => commands::handle_search_command(&api, &display, args, json_output)?,
+        Commands::Backup(cmd) => commands::handle_backup_command(&api, &display, cmd, json_output)?,
+        Commands::Dashboard(args) => commands::handle_dashboard_command(&api, &display, args, json_output)?,
     }
-    
-    Ok(())
-}
 
-fn month_summary(api: &ApiClient, display: &Display) -> Result<()> {
-    print_section_header("This Month's Summary");
-    
-    let month = chrono::Local::now().format("%Y-%m").to_string();
-    
-    print_info(&format!("Generating report for {}...", month));
-    let report = api.get_monthly_report(&month, None)?;
-    display.show("monthly_report", &report)?;
-    
     Ok(())
 }

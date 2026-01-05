@@ -29,7 +29,10 @@ impl ApiClient {
         Ok(Self {
             client,
             base_url: config.api.base_url.clone(),
-            api_key: config.api.api_key.clone(),
+            api_key: config.api.api_key.clone().unwrap_or_else(|| {
+                eprintln!("❌ API key not configured!");
+                std::process::exit(1);
+            }),
         })
     }
     
@@ -174,6 +177,10 @@ impl ApiClient {
     
     pub fn get_expense(&self, id: i32) -> Result<Expense> {
         self.get(&format!("expenses/{}", id))
+    }
+    
+    pub fn get_expense_details(&self, id: i32) -> Result<ExpenseDetails> {
+        self.get(&format!("expenses/{}/details", id))
     }
     
     pub fn update_expense(&self, id: i32, expense: &ExpenseCreate) -> Result<Expense> {
@@ -428,6 +435,107 @@ impl ApiClient {
     }
     
     // ============================================
+    // CREDIT CARD TRANSACTION ENDPOINTS
+    // ============================================
+    
+    pub fn get_credit_card_transactions(
+        &self,
+        card_id: i32,
+        transaction_type: Option<&str>,
+        from_date: Option<&str>,
+        to_date: Option<&str>,
+    ) -> Result<Vec<CreditCardTransaction>> {
+        let mut params = vec![];
+        
+        if let Some(t) = transaction_type {
+            params.push(format!("transaction_type={}", t));
+        }
+        if let Some(from) = from_date {
+            params.push(format!("from_date={}", from));
+        }
+        if let Some(to) = to_date {
+            params.push(format!("to_date={}", to));
+        }
+        
+        let endpoint = if params.is_empty() {
+            format!("credit-cards/{}/transactions", card_id)
+        } else {
+            format!("credit-cards/{}/transactions?{}", card_id, params.join("&"))
+        };
+        
+        self.get(&endpoint)
+    }
+    
+    pub fn make_credit_card_payment(
+        &self,
+        card_id: i32,
+        payment: &CreditCardPayment,
+    ) -> Result<CreditCardTransaction> {
+        self.post(&format!("credit-cards/{}/payment", card_id), payment)
+    }
+    
+    // ============================================
+    // DEBIT CARD ENDPOINTS
+    // ============================================
+    
+    pub fn create_debit_card(&self, card: &DebitCardCreate) -> Result<DebitCard> {
+        self.post("debit-cards/", card)
+    }
+    
+    pub fn list_debit_cards(&self, user_id: Option<i32>) -> Result<Vec<DebitCard>> {
+        let endpoint = if let Some(uid) = user_id {
+            format!("debit-cards/?user_id={}", uid)
+        } else {
+            "debit-cards/".to_string()
+        };
+        self.get(&endpoint)
+    }
+    
+    pub fn get_debit_card(&self, id: i32) -> Result<DebitCard> {
+        let response: serde_json::Value = self.get(&format!("debit-cards/{}", id))?;
+        // The API returns {card: {...}, linked_account: {...}}
+        // Extract just the card
+        let card: DebitCard = serde_json::from_value(response["card"].clone())?;
+        Ok(card)
+    }
+    
+    pub fn get_debit_card_details(&self, id: i32) -> Result<serde_json::Value> {
+        self.get(&format!("debit-cards/{}", id))
+    }
+    
+    pub fn update_debit_card(&self, id: i32, card: &DebitCardCreate) -> Result<DebitCard> {
+        self.put(&format!("debit-cards/{}", id), card)
+    }
+    
+    pub fn delete_debit_card(&self, id: i32) -> Result<serde_json::Value> {
+        self.delete(&format!("debit-cards/{}", id))
+    }
+    
+    pub fn get_debit_card_transactions(
+        &self,
+        card_id: i32,
+        from_date: Option<&str>,
+        to_date: Option<&str>,
+    ) -> Result<Vec<SavingsAccountTransaction>> {
+        let mut params = vec![];
+        
+        if let Some(from) = from_date {
+            params.push(format!("from_date={}", from));
+        }
+        if let Some(to) = to_date {
+            params.push(format!("to_date={}", to));
+        }
+        
+        let endpoint = if params.is_empty() {
+            format!("debit-cards/{}/transactions", card_id)
+        } else {
+            format!("debit-cards/{}/transactions?{}", card_id, params.join("&"))
+        };
+        
+        self.get(&endpoint)
+    }
+    
+    // ============================================
     // REPORT ENDPOINTS
     // ============================================
     
@@ -550,4 +658,246 @@ impl ApiClient {
         
         response.text().context("Failed to read CSV response")
     }
+
+    // ============================================
+    // SAVINGS GOAL ENDPOINTS
+    // ============================================
+
+    pub fn create_savings_goal(&self, goal: &crate::models::SavingsGoalCreate) -> Result<crate::models::SavingsGoal> {
+        self.post("savings-goals/", goal)
+    }
+
+    pub fn list_savings_goals(&self, user_id: Option<i32>) -> Result<Vec<crate::models::SavingsGoal>> {
+        let endpoint = if let Some(uid) = user_id {
+            format!("savings-goals/?user_id={}", uid)
+        } else {
+            "savings-goals/".to_string()
+        };
+        self.get(&endpoint)
+    }
+
+    pub fn update_savings_goal(&self, id: i32, goal: &crate::models::SavingsGoalCreate) -> Result<crate::models::SavingsGoal> {
+        self.put(&format!("savings-goals/{}", id), goal)
+    }
+
+    pub fn delete_savings_goal(&self, id: i32) -> Result<serde_json::Value> {
+        self.delete(&format!("savings-goals/{}", id))
+    }
+
+    pub fn add_to_savings_goal(&self, id: i32, update: &crate::models::SavingsGoalUpdate) -> Result<crate::models::SavingsGoal> {
+        self.post(&format!("savings-goals/{}/add", id), update)
+    }
+
+    pub fn withdraw_from_savings_goal(&self, id: i32, update: &crate::models::SavingsGoalUpdate) -> Result<crate::models::SavingsGoal> {
+        self.post(&format!("savings-goals/{}/withdraw", id), update)
+    }
+
+    pub fn get_savings_goal_progress(&self, id: i32) -> Result<serde_json::Value> {
+        self.get(&format!("savings-goals/{}/progress", id))
+    }
+
+    // ============================================
+    // ASSET ENDPOINTS
+    // ============================================
+
+    pub fn create_asset(&self, asset: &crate::models::AssetCreate) -> Result<crate::models::Asset> {
+        self.post("assets/", asset)
+    }
+
+    pub fn list_assets(&self, user_id: Option<i32>, asset_type: Option<&str>) -> Result<Vec<crate::models::Asset>> {
+        let mut params = vec![];
+        
+        if let Some(uid) = user_id {
+            params.push(format!("user_id={}", uid));
+        }
+        if let Some(atype) = asset_type {
+            params.push(format!("asset_type={}", atype));
+        }
+        
+        let endpoint = if params.is_empty() {
+            "assets/".to_string()
+        } else {
+            format!("assets/?{}", params.join("&"))
+        };
+        
+        self.get(&endpoint)
+    }
+
+    pub fn get_asset(&self, id: i32) -> Result<crate::models::Asset> {
+        self.get(&format!("assets/{}", id))
+    }
+
+    pub fn update_asset(&self, id: i32, asset: &crate::models::AssetCreate) -> Result<crate::models::Asset> {
+        self.put(&format!("assets/{}", id), asset)
+    }
+
+    pub fn delete_asset(&self, id: i32) -> Result<serde_json::Value> {
+        self.delete(&format!("assets/{}", id))
+    }
+
+    pub fn update_asset_value(&self, id: i32, update: &crate::models::AssetValueUpdate) -> Result<crate::models::Asset> {
+        self.put(&format!("assets/{}/value", id), update)
+    }
+
+    pub fn get_assets_summary(&self, user_id: Option<i32>) -> Result<serde_json::Value> {
+        let endpoint = if let Some(uid) = user_id {
+            format!("assets/summary?user_id={}", uid)
+        } else {
+            "assets/summary".to_string()
+        };
+        self.get(&endpoint)
+    }
+
+    pub fn get_asset_depreciation(&self, user_id: Option<i32>) -> Result<serde_json::Value> {
+        let endpoint = if let Some(uid) = user_id {
+            format!("assets/depreciation?user_id={}", uid)
+        } else {
+            "assets/depreciation".to_string()
+        };
+        self.get(&endpoint)
+    }
+
+    // ============================================
+    // RECURRING EXPENSE ENDPOINTS
+    // ============================================
+
+    pub fn create_recurring_template(&self, template: &crate::models::RecurringExpenseTemplateCreate) -> Result<crate::models::RecurringExpenseTemplate> {
+        self.post("recurring-expenses/", template)
+    }
+
+    pub fn list_recurring_templates(&self, user_id: Option<i32>, frequency: Option<&str>) -> Result<Vec<crate::models::RecurringExpenseTemplate>> {
+        let mut params = vec![];
+        
+        if let Some(uid) = user_id {
+            params.push(format!("user_id={}", uid));
+        }
+        if let Some(freq) = frequency {
+            params.push(format!("frequency={}", freq));
+        }
+        
+        let endpoint = if params.is_empty() {
+            "recurring-expenses/".to_string()
+        } else {
+            format!("recurring-expenses/?{}", params.join("&"))
+        };
+        
+        self.get(&endpoint)
+    }
+
+    pub fn get_recurring_template(&self, id: i32) -> Result<crate::models::RecurringExpenseTemplate> {
+        self.get(&format!("recurring-expenses/{}", id))
+    }
+
+    pub fn update_recurring_template(&self, id: i32, template: &crate::models::RecurringExpenseTemplateCreate) -> Result<crate::models::RecurringExpenseTemplate> {
+        self.put(&format!("recurring-expenses/{}", id), template)
+    }
+
+    pub fn delete_recurring_template(&self, id: i32) -> Result<serde_json::Value> {
+        self.delete(&format!("recurring-expenses/{}", id))
+    }
+
+    // pub fn generate_expense_from_template(&self, id: i32) -> Result<crate::models::Expense> {
+    //     self.post(&format!("recurring-expenses/{}/generate", id), &serde_json::json!({}))
+    // }
+
+    pub fn get_upcoming_recurring_expenses(&self, days: i32, user_id: Option<i32>) -> Result<serde_json::Value> {
+        let mut params = vec![format!("days={}", days)];
+        
+        if let Some(uid) = user_id {
+            params.push(format!("user_id={}", uid));
+        }
+        
+        self.get(&format!("recurring-expenses/upcoming?{}", params.join("&")))
+    }
+
+    pub fn skip_recurring_occurrence(&self, id: i32) -> Result<serde_json::Value> {
+        self.post(&format!("recurring-expenses/{}/skip", id), &serde_json::json!({}))
+    }
+
+    pub fn generate_due_recurring_expenses(&self) -> Result<serde_json::Value> {
+        self.post("recurring-expenses/generate-due", &serde_json::json!({}))
+    }
+
+    // ============================================
+    // SAVINGS ACCOUNT ENDPOINTS
+    // ============================================
+
+    pub fn create_savings_account(&self, account: &crate::models::SavingsAccountCreate) -> Result<crate::models::SavingsAccount> {
+        self.post("savings-accounts/", account)
+    }
+
+    pub fn list_savings_accounts(&self, user_id: Option<i32>) -> Result<Vec<crate::models::SavingsAccount>> {
+        let endpoint = if let Some(uid) = user_id {
+            format!("savings-accounts/?user_id={}", uid)
+        } else {
+            "savings-accounts/".to_string()
+        };
+        self.get(&endpoint)
+    }
+
+    // pub fn get_savings_account(&self, id: i32) -> Result<crate::models::SavingsAccount> {
+    //     self.get(&format!("savings-accounts/{}", id))
+    // }
+
+    pub fn update_savings_account(&self, id: i32, account: &crate::models::SavingsAccountCreate) -> Result<crate::models::SavingsAccount> {
+        self.put(&format!("savings-accounts/{}", id), account)
+    }
+
+    pub fn delete_savings_account(&self, id: i32) -> Result<serde_json::Value> {
+        self.delete(&format!("savings-accounts/{}", id))
+    }
+
+    pub fn deposit_to_account(&self, id: i32, deposit: &crate::models::SavingsAccountDeposit) -> Result<crate::models::SavingsAccount> {
+        self.post(&format!("savings-accounts/{}/deposit", id), deposit)
+    }
+
+    pub fn withdraw_from_account(&self, id: i32, withdrawal: &crate::models::SavingsAccountWithdraw) -> Result<crate::models::SavingsAccount> {
+        self.post(&format!("savings-accounts/{}/withdraw", id), withdrawal)
+    }
+
+    pub fn post_interest(&self, id: i32, interest: &crate::models::SavingsAccountDeposit) -> Result<crate::models::SavingsAccount> {
+        self.post(&format!("savings-accounts/{}/interest", id), interest)
+    }
+
+    pub fn get_account_transactions(
+        &self,
+        id: i32,
+        from_date: Option<&str>,
+        to_date: Option<&str>,
+        transaction_type: Option<&str>,
+    ) -> Result<serde_json::Value> {
+        let mut params = vec![];
+        
+        if let Some(from) = from_date {
+            params.push(format!("from_date={}", from));
+        }
+        if let Some(to) = to_date {
+            params.push(format!("to_date={}", to));
+        }
+        if let Some(ttype) = transaction_type {
+            params.push(format!("transaction_type={}", ttype));
+        }
+        
+        let endpoint = if params.is_empty() {
+            format!("savings-accounts/{}/transactions", id)
+        } else {
+            format!("savings-accounts/{}/transactions?{}", id, params.join("&"))
+        };
+        
+        self.get(&endpoint)
+    }
+
+    pub fn get_account_summary(&self, id: i32) -> Result<serde_json::Value> {
+        self.get(&format!("savings-accounts/{}/summary", id))
+    }
+
+    pub fn get_all_accounts_summary(&self, user_id: Option<i32>) -> Result<serde_json::Value> {
+        let endpoint = if let Some(uid) = user_id {
+            format!("savings-accounts/summary/all?user_id={}", uid)
+        } else {
+            "savings-accounts/summary/all".to_string()
+        };
+        self.get(&endpoint)
+    }
+
 }

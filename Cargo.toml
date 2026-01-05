@@ -31,3 +31,6 @@ chrono = { version = "0.4", features = ["serde"] }
 
 # Python integration
 pyo3 = { version = "0.20", features = ["auto-initialize"] }
+
+flate2 = "1.0"           # For compression
+tar = "0.4"              # For tar archives

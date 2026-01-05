@@ -22,7 +22,14 @@ pub const PAYMENT_METHODS: &[&str] = &[
     "cash",
     "debit_card",
     "credit_card",
-    "upi",
+    "savings_account",  // NEW (removed upi)
+];
+
+// Account types
+pub const ACCOUNT_TYPES: &[&str] = &[
+    "savings",
+    "checking",
+    "money_market",
 ];
 
 // Budget periods
@@ -85,6 +92,41 @@ pub const CATEGORY_KEYWORDS: &[(&str, &str)] = &[
     ("gift", "Gifts"),
     ("hotel", "Travel"),
     ("vacation", "Travel"),
+];
+
+// Asset types
+pub const ASSET_TYPES: &[&str] = &[
+    "property",
+    "vehicle",
+    "investment",
+    "electronics",
+    "jewelry",
+    "furniture",
+    "art",
+    "collectibles",
+    "other",
+];
+
+// ... existing constants ...
+
+// Recurring expense frequencies
+pub const RECURRING_FREQUENCIES: &[&str] = &[
+    "daily",
+    "weekly",
+    "monthly",
+    "yearly",
+    "custom",
+];
+
+// Days of week
+pub const DAYS_OF_WEEK: &[&str] = &[
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
 ];
 
 // Smart category suggestion
